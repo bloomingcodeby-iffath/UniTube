@@ -1,1 +1,101 @@
+#  UniTube Backend - Update 1
 
+```
+This update covers
+- basic backend setup
+- authentication system
+- course API
+```
+
+## 📁 Project Structure
+
+backend/
+├── main.py
+├── database.py
+├── models.py
+├── schemas.py
+├── auth_utils.py
+├── dependencies.py
+├── routes/
+│   ├── auth.py
+│   ├── courses.py
+└── venv/
+
+---
+
+## ⚙️ Accomplished So Far
+
+### 1. Backend Setup
+- FastAPI project created
+- MySQL database connected using SQLAlchemy
+- Project structure organized in modular format
+
+---
+
+### 2. Database Integration
+- Database session system created
+- Models connected with MySQL
+- Tables automatically created using SQLAlchemy
+
+---
+
+### 3. User Authentication System
+
+#### Register Feature
+- User can register with email and password
+- Password is securely hashed using bcrypt
+- Duplicate email check added
+
+#### Login Feature
+- User login with email & password
+- Password verified using bcrypt
+- JWT token generated after successful login
+
+---
+
+### 4. JWT Authentication
+- Token-based authentication implemented
+- Protected routes created
+- Only logged-in users can access secure APIs
+
+---
+
+### 5. Course Module
+- Course table created
+- Course list API implemented
+- Protected course access added (JWT required)
+
+---
+
+## 🔐 API Testing (Swagger UI)
+
+All APIs tested using:
+
+http://127.0.0.1:8000/docs
+
+### Working APIs:
+- POST /auth/register
+- POST /auth/login
+- GET /auth/me
+- GET /courses/
+
+---
+
+## 🔄 System Flow
+
+User → API Request → Backend Route → Database → Response
+
+**Authentication Flow:**
+Login → Verify Password → Generate JWT → Access Protected Routes
+
+---
+
+## ✅ Current Status
+
+- Backend setup completed
+- Authentication system working
+- JWT security implemented
+- Course API working
+- Database connected successfully
+
+---
