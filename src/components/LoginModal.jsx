@@ -4,12 +4,13 @@ export default function Loginmodal({ show, onClose, dark}){
     if(!show) return null;
 
     const t={
-        cardBg: dark? "#1a2e28" : "#ffffff",
-        text: dark ? "#e8f5f0" :  "#1A312C",
-        text2: dark ? "#89D7B7" : "#428475",
-        border: dark ? "#2a4a3e" : "#d4c9b0",
-        btnBg: dark ? "#428475" : "#1A312C",        
+        cardBg: dark ? "#1E293B" : "#ffffff",
+        text: dark ? "#F1F5F9" : "#111827",
+        text: dark ? "#F1F5F9" : "#111827",
+        border: dark ? "#334155" : "#DBEAFE",
+        btnBg: dark ? "#2563EB" : "#1E3A5F",        
     };
+   
   return (
     <div onClick={(e) => e.target === e.currentTarget && onClose()}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center" }}>
