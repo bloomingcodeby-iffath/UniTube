@@ -192,9 +192,7 @@ System should support adding:
 
 # 7. Technology Stack
 ### Frontend
--   HTML
--   CSS
--   JavaScript
+-  React js
 
 ### Backend
 -   FastAPI (Python)
