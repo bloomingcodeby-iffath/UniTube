@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from database import engine
+from models import Base
+
 from routes import (
     auth,
     courses,
@@ -8,29 +11,32 @@ from routes import (
     notes
 )
 
-from database import engine
-from models import Base
-
 
 # =====================
-# CREATE TABLES
+# CREATE DATABASE TABLES
 # =====================
 
 Base.metadata.create_all(bind=engine)
 
 
+# =====================
+# FASTAPI APP
+# =====================
+
 app = FastAPI(
-    title="UniTube API"
+    title="UniTube API",
+    version="1.0.0",
+    description="Backend API for UniTube - Course & YouTube Playlist Management System"
 )
 
 
 # =====================
-# CORS
+# CORS CONFIGURATION
 # =====================
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],          # Change this in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,25 +44,18 @@ app.add_middleware(
 
 
 # =====================
-# ROUTERS
+# ROUTES
 # =====================
 
 app.include_router(
     auth.router,
-    prefix="/auth"
+    prefix="/auth",
+    tags=["Authentication"]
 )
 
-app.include_router(
-    courses.router
-)
-
-app.include_router(
-    playlist.router
-)
-
-app.include_router(
-    notes.router
-)
+app.include_router(courses.router)
+app.include_router(playlist.router)
+app.include_router(notes.router)
 
 
 # =====================
@@ -65,7 +64,7 @@ app.include_router(
 
 @app.get("/")
 def home():
-
     return {
-        "message": "UniTube API running"
+        "message": "Welcome to UniTube API",
+        "status": "Running"
     }
