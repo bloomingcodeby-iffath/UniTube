@@ -26,7 +26,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="UniTube API",
     version="1.0.0",
-    description="Backend API for UniTube - Course & YouTube Playlist Management System"
+    description="Backend API for UniTube - Course Video Playlist Management System"
 )
 
 
