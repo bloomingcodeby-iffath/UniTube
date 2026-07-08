@@ -19,20 +19,20 @@ class UserCreate(BaseModel):
     year_semester: Optional[str] = None
 
 
-
 class UserResponse(BaseModel):
 
     user_id: int
     username: str
     email: str
-
+    phone_number: Optional[str] = None
+    institution: Optional[str] = None
     department: Optional[str] = None
-
+    batch: Optional[str] = None
+    year_semester: Optional[str] = None
     role: str
 
     class Config:
         from_attributes = True
-
 
 
 class UserLogin(BaseModel):
@@ -41,11 +41,9 @@ class UserLogin(BaseModel):
     password: str
 
 
-
 class ForgotPassword(BaseModel):
 
     email: str
-
 
 
 class ResetPassword(BaseModel):
@@ -53,6 +51,24 @@ class ResetPassword(BaseModel):
     email: str
     new_password: str
 
+
+# =====================
+# UPDATE PROFILE
+# =====================
+
+class UpdateProfile(BaseModel):
+
+    username: str
+
+    phone_number: Optional[str] = None
+
+    institution: Optional[str] = None
+
+    department: Optional[str] = None
+
+    batch: Optional[str] = None
+
+    year_semester: Optional[str] = None
 
 
 # =====================
@@ -68,7 +84,6 @@ class CourseCreate(BaseModel):
     course_type: Optional[str] = None
 
 
-
 class CourseResponse(BaseModel):
 
     course_id: int
@@ -81,7 +96,6 @@ class CourseResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
 
 
 # =====================
@@ -99,7 +113,6 @@ class PlaylistCreate(BaseModel):
     channel_name: Optional[str] = None
 
     language: Optional[str] = None
-
 
 
 class PlaylistResponse(BaseModel):
@@ -120,7 +133,6 @@ class PlaylistResponse(BaseModel):
         from_attributes = True
 
 
-
 # =====================
 # NOTES SCHEMAS
 # =====================
@@ -130,7 +142,6 @@ class NoteCreate(BaseModel):
     course_id: int
 
     note_text: str
-
 
 
 class NoteResponse(BaseModel):
