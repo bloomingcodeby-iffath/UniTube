@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function About({ dark, setDark }) {
   const navigate = useNavigate();
+  const isLoggedIn = !!localStorage.getItem("token");
 useEffect(() => {
   AOS.init({
     duration: 700,
@@ -47,7 +48,7 @@ useEffect(() => {
             UniTube is a course video platform for University Students.
             Built by students, for students — to make quality education accessible anytime, anywhere.
           </p>
-          <button onClick={() => navigate("/register")} style={{
+          <button onClick={() => navigate(isLoggedIn ? "/courses" : "/register")} style={{
             background: "white", color: "#1E3A5F", border: "none",
             padding: "13px 28px", borderRadius: 8, fontSize: 15,
             fontWeight: 700, cursor: "pointer", transition: "all 0.2s",
@@ -119,7 +120,7 @@ useEffect(() => {
 
       {/* Footer */}
       <footer style={{ background: t.navBg, padding: "24px 40px", textAlign: "center" }}>
-        <div style={{ fontSize: 11, color: "#93C5FD", opacity: 0.4 }}>© 2026 UniTube •Iffath n Fariba </div>
+        <div style={{ fontSize: 11, color: "#93C5FD", opacity: 0.4 }}>© 2026 UniTube • Iffath n fariba</div>
       </footer>
     </div>
   );
