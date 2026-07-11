@@ -229,7 +229,7 @@ export default function Home({ dark, setDark }) {
 
             {/* CTA Buttons */}
             <div style={{ marginTop: 28, display: "flex", gap: 12 }}>
-              <button onClick={() => navigate("/register")} style={{
+              <button onClick={() => navigate(isLoggedIn ? "/courses" : "/register")} style={{
                 background: t.btnBg, color: "white", border: "none",
                 padding: "12px 24px", borderRadius: 8, fontSize: 14,
                 fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
@@ -239,15 +239,17 @@ export default function Home({ dark, setDark }) {
                 onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
                 Get Started →
               </button>
-              <button onClick={handleGatedAction} style={{
-                background: "transparent", color: t.accent,
-                border: `1.5px solid ${t.accent}`, padding: "12px 24px",
-                borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "all 0.2s"
-              }}
-                onMouseEnter={e => { e.currentTarget.style.background = t.accent; e.currentTarget.style.color = "white"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = t.accent; }}>
-                Sign In
-              </button>
+              {!isLoggedIn && (
+                <button onClick={() => navigate("/login")} style={{
+                  background: "transparent", color: t.accent,
+                  border: `1.5px solid ${t.accent}`, padding: "12px 24px",
+                  borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "all 0.2s"
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.background = t.accent; e.currentTarget.style.color = "white"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = t.accent; }}>
+                  Sign In
+                </button>
+              )}
             </div>
           </div>
 
@@ -380,18 +382,27 @@ export default function Home({ dark, setDark }) {
               </div>
             </div>
             {[
-              { title: "Platform", links: ["Browse courses", "Departments", "My dashboard"] },
-              { title: "Account", links: ["Sign in", "Register"] },
-              { title: "University", links: ["Metropolitan University", "CSE Department", "Contact"] },
+              { title: "Platform", links: [
+                { label: "Browse courses", to: "/courses" },
+                { label: "Departments", to: "/courses" },
+                { label: "My dashboard", to: "/dashboard" },
+              ] },
+              { title: "Account", links: [
+                { label: "Sign in", to: "/login" },
+                { label: "Register", to: "/register" },
+              ] },
+              { title: "University", links: [
+                { label: "Contact", to: "/about" },
+              ] },
             ].map((col) => (
               <div key={col.title}>
                 <h4 style={{ fontSize: 11, fontWeight: 700, color: "#93C5FD", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>{col.title}</h4>
                 {col.links.map((l) => (
-                  <a key={l} href="#" onClick={(e) => { e.preventDefault(); handleGatedAction(); }}
+                  <a key={l.label} href="#" onClick={(e) => { e.preventDefault(); navigate(l.to); }}
                     style={{ display: "block", fontSize: 12, color: "#93C5FD", opacity: 0.5, textDecoration: "none", marginBottom: 6, transition: "opacity 0.2s" }}
                     onMouseEnter={e => e.currentTarget.style.opacity = 1}
                     onMouseLeave={e => e.currentTarget.style.opacity = 0.5}>
-                    {l}
+                    {l.label}
                   </a>
                 ))}
               </div>
