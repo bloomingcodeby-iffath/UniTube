@@ -2,15 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import LoginModal from "../components/LoginModal";
+import { getAllCourses, getCourseThumbnail } from "../api/api";
 import heroLight from "../assets/hero-light.png";
 import heroDark from "../assets/hero-dark.png";
 
 const departments = [
-  { icon: "💻", name: "Computer Science & Engineering (CSE)", count: "40+ courses" },
-  { icon: "📊", name: "Data Science (DS)", count: "25+ courses" },
-  { icon: "💻", name: "Software Engineering (SWE)", count: "40+ courses" },
-  { icon: "⚡", name: "Electrical & Electronics Engineering (EEE)", count: "20+ courses" },
-  { icon: "🎓", name: "All Depts.", count: "100+ courses" },
+  { icon: "💻", name: "Computer Science & Engineering (CSE)", count: "40+ courses", code: "CSE" },
+  { icon: "📊", name: "Data Science (DS)", count: "25+ courses", code: "DS" },
+  { icon: "💻", name: "Software Engineering (SWE)", count: "40+ courses", code: "SWE" },
+  { icon: "⚡", name: "Electrical & Electronics Engineering (EEE)", count: "20+ courses", code: "EEE" },
+  { icon: "🎓", name: "All Depts.", count: "100+ courses", code: "All" },
 ];
 
 const videos = [
@@ -43,16 +44,60 @@ function useVisible() {
 
 export default function Home({ dark, setDark }) {
   const [showModal, setShowModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [trendingVideos, setTrendingVideos] = useState(videos);
   const [heroVisible, setHeroVisible] = useState(false);
   const [statsRef, statsVisible] = useVisible();
   const [deptRef, deptVisible] = useVisible();
   const [videoRef, videoVisible] = useVisible();
   const [footerRef, footerVisible] = useVisible();
   const navigate = useNavigate();
+  const isLoggedIn = !!localStorage.getItem("token");
+
+  function handleGatedAction(opts = {}) {
+    if (isLoggedIn) {
+      const params = new URLSearchParams();
+      if (opts.search) params.set("search", opts.search);
+      if (opts.dept && opts.dept !== "All") params.set("dept", opts.dept);
+      const qs = params.toString();
+      navigate(qs ? `/courses?${qs}` : "/courses");
+    } else {
+      setShowModal(true);
+    }
+  }
 
   useEffect(() => {
     setTimeout(() => setHeroVisible(true), 100);
   }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const token = localStorage.getItem("token");
+
+    async function loadTrending() {
+      try {
+        const res = await getAllCourses(token);
+        const list = (res.courses || []).slice(0, 3);
+        if (list.length === 0) return;
+
+        const withThumbs = await Promise.all(
+          list.map(async (c, i) => ({
+            title: c.title,
+            channel: c.department || "UniTube",
+            badge: c.department || "Course",
+            bg: videos[i % videos.length].bg,
+            thumbnail: await getCourseThumbnail(token, c.id),
+            courseId: c.id,
+          }))
+        );
+        setTrendingVideos(withThumbs);
+      } catch {
+        // keep the static fallback list on failure
+      }
+    }
+
+    loadTrending();
+  }, [isLoggedIn]);
 
   const t = {
     bg: dark ? "#0F172A" : "#F9FAFB",
@@ -148,13 +193,15 @@ export default function Home({ dark, setDark }) {
               boxShadow: dark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 4px 20px rgba(37,99,235,0.1)"
             }}>
               <input type="text" placeholder="Search any subject or course..."
-                onKeyDown={(e) => e.key === "Enter" && setShowModal(true)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleGatedAction({ search: searchTerm })}
                 style={{
                   flex: 1, padding: "13px 16px", border: "none",
                   outline: "none", fontSize: 13, color: t.text,
                   background: "transparent"
                 }} />
-              <button onClick={() => setShowModal(true)} style={{
+              <button onClick={() => handleGatedAction({ search: searchTerm })} style={{
                 background: t.btnBg, color: "white", border: "none",
                 padding: "13px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer",
                 transition: "background 0.2s"
@@ -167,7 +214,7 @@ export default function Home({ dark, setDark }) {
             <div style={{ marginTop: 14, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <span style={{ fontSize: 11, color: t.text2, opacity: 0.7 }}>Popular:</span>
               {["Algorithm", "AI", "Data Structures", "Database"].map((tag) => (
-                <span key={tag} onClick={() => setShowModal(true)} style={{
+                <span key={tag} onClick={() => handleGatedAction({ search: tag })} style={{
                   fontSize: 11, color: t.accent, background: t.tagBg,
                   border: `1px solid ${t.border}`, borderRadius: 20,
                   padding: "4px 12px", cursor: "pointer", transition: "all 0.2s",
@@ -192,7 +239,7 @@ export default function Home({ dark, setDark }) {
                 onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
                 Get Started →
               </button>
-              <button onClick={() => setShowModal(true)} style={{
+              <button onClick={handleGatedAction} style={{
                 background: "transparent", color: t.accent,
                 border: `1.5px solid ${t.accent}`, padding: "12px 24px",
                 borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "all 0.2s"
@@ -244,7 +291,7 @@ export default function Home({ dark, setDark }) {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
             {departments.map((d, i) => (
-              <div key={d.name} onClick={() => setShowModal(true)}
+              <div key={d.name} onClick={() => handleGatedAction({ dept: d.code })}
                 onMouseEnter={e => {
                   e.currentTarget.style.borderColor = t.accent;
                   e.currentTarget.style.transform = "translateY(-4px)";
@@ -278,8 +325,8 @@ export default function Home({ dark, setDark }) {
             Popular video lectures
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }}>
-            {videos.map((v, i) => (
-              <div key={v.title} onClick={() => setShowModal(true)}
+            {trendingVideos.map((v, i) => (
+              <div key={v.title} onClick={() => handleGatedAction({ search: v.title })}
                 onMouseEnter={e => {
                   e.currentTarget.style.transform = "translateY(-5px)";
                   e.currentTarget.style.boxShadow = dark ? "0 12px 32px rgba(0,0,0,0.4)" : "0 12px 32px rgba(37,99,235,0.15)";
@@ -293,14 +340,20 @@ export default function Home({ dark, setDark }) {
                   borderRadius: 14, overflow: "hidden", cursor: "pointer",
                   transition: "all 0.25s", ...fadeUp(videoVisible, i * 0.1)
                 }}>
-                <div style={{ height: 140, background: v.bg, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                <div style={{
+                  height: 140, position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
+                  background: v.thumbnail ? `#000 url(${v.thumbnail}) center/cover no-repeat` : v.bg
+                }}>
+                  {v.thumbnail && (
+                    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.28)" }} />
+                  )}
                   <div style={{
-                    position: "absolute", top: 10, left: 10,
+                    position: "absolute", top: 10, left: 10, zIndex: 1,
                     background: "#60A5FA", color: "#0F172A",
                     fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5
                   }}>{v.badge}</div>
                   <div style={{
-                    width: 44, height: 44, background: "white", borderRadius: "50%",
+                    zIndex: 1, width: 44, height: 44, background: "white", borderRadius: "50%",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 18, boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
                     transition: "transform 0.2s"
@@ -334,7 +387,7 @@ export default function Home({ dark, setDark }) {
               <div key={col.title}>
                 <h4 style={{ fontSize: 11, fontWeight: 700, color: "#93C5FD", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>{col.title}</h4>
                 {col.links.map((l) => (
-                  <a key={l} href="#" onClick={(e) => { e.preventDefault(); setShowModal(true); }}
+                  <a key={l} href="#" onClick={(e) => { e.preventDefault(); handleGatedAction(); }}
                     style={{ display: "block", fontSize: 12, color: "#93C5FD", opacity: 0.5, textDecoration: "none", marginBottom: 6, transition: "opacity 0.2s" }}
                     onMouseEnter={e => e.currentTarget.style.opacity = 1}
                     onMouseLeave={e => e.currentTarget.style.opacity = 0.5}>

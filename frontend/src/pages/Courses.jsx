@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { getUserCourses, getAllCourses, saveUserCourses, getNotes, saveNote } from "../api/api";
+import { getUserCourses, getAllCourses, selectCourse, removeCourse, getNotes, saveNote, getPlaylist, getCourseThumbnail } from "../api/api";
 
 export default function Dashboard({ dark, setDark }) {
   const navigate = useNavigate();
@@ -16,6 +16,10 @@ export default function Dashboard({ dark, setDark }) {
   const [newHighlight, setNewHighlight] = useState("");
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState("my"); // my | browse
+  const [viewingCourse, setViewingCourse] = useState(null);
+  const [thumbnails, setThumbnails] = useState({});
+  const [playlistItems, setPlaylistItems] = useState([]);
+  const [loadingPlaylist, setLoadingPlaylist] = useState(false);
 
   const token = localStorage.getItem("token");
 
@@ -31,6 +35,18 @@ export default function Dashboard({ dark, setDark }) {
       const [all, my] = await Promise.all([getAllCourses(token), getUserCourses(token)]);
       setAllCourses(all.courses || []);
       setMyCourses(my.courses || []);
+
+      // fetch real YouTube thumbnails in the background - cards fall back
+      // to the colored placeholder until each one resolves
+      const seen = new Set();
+      [...(all.courses || []), ...(my.courses || [])].forEach(async (c) => {
+        if (seen.has(c.id)) return;
+        seen.add(c.id);
+        const url = await getCourseThumbnail(token, c.id);
+        if (url) {
+          setThumbnails((prev) => ({ ...prev, [c.id]: url }));
+        }
+      });
     } catch {
       console.error("Failed to load courses");
     }
@@ -38,11 +54,40 @@ export default function Dashboard({ dark, setDark }) {
 
   async function toggleCourse(course) {
     const isEnrolled = myCourses.find(c => c.id === course.id);
-    const updated = isEnrolled
-      ? myCourses.filter(c => c.id !== course.id)
-      : [...myCourses, course];
-    setMyCourses(updated);
-    await saveUserCourses(token, updated.map(c => c.id));
+
+    if (isEnrolled) {
+      setMyCourses(myCourses.filter(c => c.id !== course.id));
+      await removeCourse(token, course.id);
+    } else {
+      setMyCourses([...myCourses, course]);
+      await selectCourse(token, course.id);
+    }
+  }
+
+  async function openPlaylist(course) {
+    setViewingCourse(course);
+    setLoadingPlaylist(true);
+    try {
+      const res = await getPlaylist(token, course.id);
+      setPlaylistItems(res.playlists || []);
+    } catch {
+      setPlaylistItems([]);
+    }
+    setLoadingPlaylist(false);
+  }
+
+  function closePlaylist() {
+    setViewingCourse(null);
+    setPlaylistItems([]);
+  }
+
+  function toEmbedUrl(url) {
+    if (!url) return "";
+    const listMatch = url.match(/[?&]list=([^&]+)/);
+    if (listMatch) return `https://www.youtube.com/embed/videoseries?list=${listMatch[1]}`;
+    const watchMatch = url.match(/[?&]v=([^&]+)/);
+    if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}`;
+    return url;
   }
 
   async function openNotes(course) {
@@ -197,10 +242,18 @@ export default function Dashboard({ dark, setDark }) {
                     <div key={course.id} style={{ background: t.cardBg, border: `1px solid ${isEnrolled ? t.accent : t.border}`, borderRadius: 14, overflow: "hidden", transition: "all 0.2s" }}
                       onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
                       onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
-                      <div style={{ height: 100, background: cardColors[i % cardColors.length], display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                        <div style={{ position: "absolute", top: 8, left: 8, background: "#60A5FA", color: "#0F172A", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>{course.department}</div>
-                        {isEnrolled && <div style={{ position: "absolute", top: 8, right: 8, background: "#22C55E", color: "white", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>✓ Enrolled</div>}
-                        <div style={{ width: 36, height: 36, background: "white", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>▶</div>
+                      <div style={{
+                        height: 100, position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
+                        background: thumbnails[course.id]
+                          ? `#000 url(${thumbnails[course.id]}) center/cover no-repeat`
+                          : cardColors[i % cardColors.length]
+                      }}>
+                        {thumbnails[course.id] && (
+                          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.28)" }} />
+                        )}
+                        <div style={{ position: "absolute", top: 8, left: 8, zIndex: 1, background: "#60A5FA", color: "#0F172A", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>{course.department}</div>
+                        {isEnrolled && <div style={{ position: "absolute", top: 8, right: 8, zIndex: 1, background: "#22C55E", color: "white", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>✓ Enrolled</div>}
+                        <div style={{ zIndex: 1, width: 36, height: 36, background: "white", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>▶</div>
                       </div>
                       <div style={{ padding: 14 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 3 }}>{course.title}</div>
@@ -214,6 +267,11 @@ export default function Dashboard({ dark, setDark }) {
                           }}>
                             {isEnrolled ? "Remove" : "+ Add"}
                           </button>
+                          {isEnrolled && (
+                            <button onClick={() => openPlaylist(course)} style={{ flex: 1, padding: "7px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", background: t.bg2, color: t.accent, border: `1px solid ${t.border}`, transition: "all 0.2s" }}>
+                              ▶ Videos
+                            </button>
+                          )}
                           {isEnrolled && (
                             <button onClick={() => openNotes(course)} style={{ flex: 1, padding: "7px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", background: t.bg2, color: t.accent, border: `1px solid ${t.border}`, transition: "all 0.2s" }}>
                               📝 Notes
@@ -311,6 +369,51 @@ export default function Dashboard({ dark, setDark }) {
           </div>
         )}
       </div>
+
+      {/* Playlist Modal */}
+      {viewingCourse && (
+        <div onClick={closePlaylist} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: t.cardBg, borderRadius: 16, maxWidth: 860, width: "100%", maxHeight: "85vh", overflowY: "auto", padding: 28 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: t.text }}>{viewingCourse.title}</div>
+                <div style={{ fontSize: 12, color: t.text2, opacity: 0.8 }}>{viewingCourse.department}</div>
+              </div>
+              <button onClick={closePlaylist} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: t.text }}>✕</button>
+            </div>
+
+            {loadingPlaylist ? (
+              <div style={{ textAlign: "center", padding: 32, color: t.text2 }}>Loading videos...</div>
+            ) : playlistItems.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 32, color: t.text2 }}>
+                No videos added for this course yet.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {playlistItems.map(p => (
+                  <div key={p.playlist_id} style={{ border: `1px solid ${t.border}`, borderRadius: 12, overflow: "hidden" }}>
+                    <div style={{ position: "relative", paddingBottom: "56.25%", height: 0 }}>
+                      <iframe
+                        src={toEmbedUrl(p.yt_url)}
+                        title={p.playlist_title}
+                        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                        allowFullScreen
+                      />
+                    </div>
+                    <div style={{ padding: 12 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{p.playlist_title}</div>
+                      <div style={{ fontSize: 11, color: t.text2, opacity: 0.8, marginBottom: 8 }}>{p.channel_name} · {p.language}</div>
+                      <a href={p.yt_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: t.accent, fontWeight: 600, textDecoration: "none" }}>
+                        ▶ Open full playlist on YouTube →
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
