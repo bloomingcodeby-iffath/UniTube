@@ -35,10 +35,12 @@ export default function Login({ dark, setDark }) {
   };
 
   async function doLogin() {
-    if (!email || !pass) { setError("Please fill all fields"); return; }
+    const cleanEmail = email.trim();
+    const cleanPass = pass.trim();
+    if (!cleanEmail || !cleanPass) { setError("Please fill all fields"); return; }
     setLoading(true); setError("");
     try {
-      const res = await loginUser(email, pass);
+      const res = await loginUser(cleanEmail, cleanPass);
       if (res.token) {
         localStorage.setItem("token", res.token);
         localStorage.setItem("user", JSON.stringify(res.user));
@@ -46,8 +48,8 @@ export default function Login({ dark, setDark }) {
       } else {
         setError(res.message || "Login failed. Check your credentials.");
       }
-    } catch {
-      setError("Server error. Please try again.");
+    } catch (err) {
+      setError(err.message || "Server error. Please try again.");
     }
     setLoading(false);
   }
