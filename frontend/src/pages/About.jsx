@@ -119,7 +119,7 @@ useEffect(() => {
 
       {/* Footer */}
       <footer style={{ background: t.navBg, padding: "24px 40px", textAlign: "center" }}>
-        <div style={{ fontSize: 11, color: "#93C5FD", opacity: 0.4 }}>© 2026 UniTube • Metropolitan University, Sylhet</div>
+        <div style={{ fontSize: 11, color: "#93C5FD", opacity: 0.4 }}>© 2026 UniTube •Iffath n Fariba </div>
       </footer>
     </div>
   );
