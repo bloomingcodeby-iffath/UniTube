@@ -1,36 +1,36 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from models import Note, Course
-from schemas import NoteCreate
+from models import Playlist, Course
+from schemas import PlaylistCreate
 
 from dependencies import (
     get_current_user,
+    admin_required,
     get_db
 )
 
 router = APIRouter(
-    prefix="/notes",
-    tags=["Notes"]
+    prefix="/playlist",
+    tags=["Playlist"]
 )
 
 
 # =====================
-# ADD NOTE
+# ADMIN ADD PLAYLIST
 # =====================
 
 @router.post("/add")
-def add_note(
+def add_playlist(
 
-    data: NoteCreate,
+    playlist: PlaylistCreate,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user)
+    admin=Depends(admin_required)
 
 ):
 
-    # Check if course exists
     course = db.query(Course).filter(
-        Course.course_id == data.course_id
+        Course.course_id == playlist.course_id
     ).first()
 
     if course is None:
@@ -40,79 +40,93 @@ def add_note(
             detail="Course not found"
         )
 
-    new_note = Note(
+    new_playlist = Playlist(
 
-        user_id=user.user_id,
-        course_id=data.course_id,
-        note_text=data.note_text
+        course_id=playlist.course_id,
+        playlist_title=playlist.playlist_title,
+        yt_url=playlist.yt_url,
+        channel_name=playlist.channel_name,
+        language=playlist.language
 
     )
 
-    db.add(new_note)
+    db.add(new_playlist)
     db.commit()
-    db.refresh(new_note)
+    db.refresh(new_playlist)
 
     return {
 
-        "message": "Note added",
-        "note_id": new_note.note_id
+        "message": "Playlist added",
+        "playlist_id": new_playlist.playlist_id
 
     }
 
 
 # =====================
-# MY NOTES
+# GET PLAYLIST BY COURSE
 # =====================
 
-@router.get("/my")
-def my_notes(
+@router.get("/{course_id}")
+def get_playlist(
 
+    course_id: int,
     db: Session = Depends(get_db),
     user=Depends(get_current_user)
 
 ):
 
-    notes = db.query(Note).filter(
-
-        Note.user_id == user.user_id
-
-    ).all()
-
-    return notes
-
-
-# =====================
-# DELETE NOTE
-# =====================
-
-@router.delete("/{note_id}")
-def delete_note(
-
-    note_id: int,
-    db: Session = Depends(get_db),
-    user=Depends(get_current_user)
-
-):
-
-    note = db.query(Note).filter(
-
-        Note.note_id == note_id,
-        Note.user_id == user.user_id
-
+    # Check if course exists
+    course = db.query(Course).filter(
+        Course.course_id == course_id
     ).first()
 
-    if note is None:
+    if course is None:
 
         raise HTTPException(
             status_code=404,
-            detail="Note not found"
+            detail="Course not found"
         )
 
-    db.delete(note)
+    playlists = db.query(Playlist).filter(
+
+        Playlist.course_id == course_id
+
+    ).all()
+
+    return playlists
+
+
+# =====================
+# ADMIN DELETE PLAYLIST
+# =====================
+
+@router.delete("/{playlist_id}")
+def delete_playlist(
+
+    playlist_id: int,
+    db: Session = Depends(get_db),
+    admin=Depends(admin_required)
+
+):
+
+    playlist = db.query(Playlist).filter(
+
+        Playlist.playlist_id == playlist_id
+
+    ).first()
+
+    if playlist is None:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Playlist not found"
+        )
+
+    db.delete(playlist)
     db.commit()
 
     return {
 
-        "message": "Note deleted"
+        "message": "Playlist deleted"
 
     }
