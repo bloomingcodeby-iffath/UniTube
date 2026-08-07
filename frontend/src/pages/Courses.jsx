@@ -1,68 +1,22 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { getUserCourses, getAllCourses, selectCourse, removeCourse, getNotes, saveNote, getPlaylist, getCourseThumbnail } from "../api/api";
+import { getAllCourses, selectCourse, getPlaylist, getCourseThumbnail } from "../api/api";
+import Footer from "../components/Footer";
 
-export default function Dashboard({ dark, setDark }) {
+export default function Courses({ dark, setDark }) {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [allCourses, setAllCourses] = useState([]);
-  const [myCourses, setMyCourses] = useState([]);
-  const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState("courses"); // courses | notes
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [notes, setNotes] = useState({ text: "", highlights: [], checklist: [] });
-  const [newCheckItem, setNewCheckItem] = useState("");
-  const [newHighlight, setNewHighlight] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState("my"); // my | browse
+  const [searchParams] = useSearchParams();
+  const [courses, setCourses] = useState([]);
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [filterDept, setFilterDept] = useState(searchParams.get("dept") || "All");
+  const [loading, setLoading] = useState(true);
   const [viewingCourse, setViewingCourse] = useState(null);
-  const [thumbnails, setThumbnails] = useState({});
   const [playlistItems, setPlaylistItems] = useState([]);
   const [loadingPlaylist, setLoadingPlaylist] = useState(false);
-
+  const [addedMsg, setAddedMsg] = useState("");
+  const [thumbnails, setThumbnails] = useState({});
   const token = localStorage.getItem("token");
-
-  useEffect(() => {
-    const u = localStorage.getItem("user");
-    if (!u || !token) { navigate("/login"); return; }
-    setUser(JSON.parse(u));
-    loadCourses();
-  }, []);
-
-  async function loadCourses() {
-    try {
-      const [all, my] = await Promise.all([getAllCourses(token), getUserCourses(token)]);
-      setAllCourses(all.courses || []);
-      setMyCourses(my.courses || []);
-
-      // fetch real YouTube thumbnails in the background - cards fall back
-      // to the colored placeholder until each one resolves
-      const seen = new Set();
-      [...(all.courses || []), ...(my.courses || [])].forEach(async (c) => {
-        if (seen.has(c.id)) return;
-        seen.add(c.id);
-        const url = await getCourseThumbnail(token, c.id);
-        if (url) {
-          setThumbnails((prev) => ({ ...prev, [c.id]: url }));
-        }
-      });
-    } catch {
-      console.error("Failed to load courses");
-    }
-  }
-
-  async function toggleCourse(course) {
-    const isEnrolled = myCourses.find(c => c.id === course.id);
-
-    if (isEnrolled) {
-      setMyCourses(myCourses.filter(c => c.id !== course.id));
-      await removeCourse(token, course.id);
-    } else {
-      setMyCourses([...myCourses, course]);
-      await selectCourse(token, course.id);
-    }
-  }
 
   async function openPlaylist(course) {
     setViewingCourse(course);
@@ -81,6 +35,16 @@ export default function Dashboard({ dark, setDark }) {
     setPlaylistItems([]);
   }
 
+  async function handleAddCourse(e, course) {
+    e.stopPropagation();
+    await selectCourse(token, course.id);
+    setAddedMsg(`"${course.title}" added to your courses!`);
+    setTimeout(() => setAddedMsg(""), 2000);
+  }
+
+  // Converts a normal YouTube watch/playlist URL into an embeddable URL.
+  // Check for a playlist (list=) FIRST — a playlist link often also has
+  // a v= param for the first video, and we still want the full sidebar.
   function toEmbedUrl(url) {
     if (!url) return "";
     const listMatch = url.match(/[?&]list=([^&]+)/);
@@ -90,56 +54,43 @@ export default function Dashboard({ dark, setDark }) {
     return url;
   }
 
-  async function openNotes(course) {
-    setSelectedCourse(course);
-    setActiveTab("notes");
-    try {
-      const res = await getNotes(token, course.id);
-      setNotes(res.notes || { text: "", highlights: [], checklist: [] });
-    } catch {
-      setNotes({ text: "", highlights: [], checklist: [] });
+  const depts = ["All", "CSE", "DS", "SWE", "EEE"];
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await getAllCourses(token);
+        const list = res.courses || [];
+        setCourses(list);
+
+        // fetch real YouTube thumbnails in the background - cards fall
+        // back to the colored placeholder until each one resolves
+        list.forEach(async (c) => {
+          const url = await getCourseThumbnail(token, c.id);
+          if (url) {
+            setThumbnails((prev) => ({ ...prev, [c.id]: url }));
+          }
+        });
+      } catch {
+        console.error("Failed to load courses");
+      }
+      setLoading(false);
     }
-  }
+    load();
+  }, []);
 
-  async function handleSaveNote() {
-    if (!selectedCourse) return;
-    setSaving(true);
-    await saveNote(token, selectedCourse.id, notes);
-    setSaving(false);
-  }
+  const filtered = courses.filter(c => {
+    const matchSearch = c.title?.toLowerCase().includes(search.toLowerCase()) || c.instructor?.toLowerCase().includes(search.toLowerCase());
+    const matchDept = filterDept === "All" || c.department === filterDept;
+    return matchSearch && matchDept;
+  });
 
-  function addCheckItem() {
-    if (!newCheckItem.trim()) return;
-    setNotes(prev => ({ ...prev, checklist: [...prev.checklist, { text: newCheckItem, done: false }] }));
-    setNewCheckItem("");
-  }
-
-  function toggleCheck(i) {
-    const updated = [...notes.checklist];
-    updated[i].done = !updated[i].done;
-    setNotes(prev => ({ ...prev, checklist: updated }));
-  }
-
-  function removeCheck(i) {
-    setNotes(prev => ({ ...prev, checklist: prev.checklist.filter((_, idx) => idx !== i) }));
-  }
-
-  function addHighlight() {
-    if (!newHighlight.trim()) return;
-    setNotes(prev => ({ ...prev, highlights: [...prev.highlights, newHighlight] }));
-    setNewHighlight("");
-  }
-
-  function removeHighlight(i) {
-    setNotes(prev => ({ ...prev, highlights: prev.highlights.filter((_, idx) => idx !== i) }));
-  }
-
-  const filtered = (tab === "my" ? myCourses : allCourses).filter(c =>
-    c.title?.toLowerCase().includes(search.toLowerCase()) ||
-    c.department?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const initials = user?.name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "U";
+  const cardColors = [
+    "linear-gradient(135deg,#1E3A5F,#2563EB)",
+    "linear-gradient(135deg,#2563EB,#60A5FA)",
+    "linear-gradient(135deg,#1E40AF,#2563EB)",
+    "linear-gradient(135deg,#0F172A,#1E3A5F)",
+  ];
 
   const t = {
     bg: dark ? "#0F172A" : "#F9FAFB",
@@ -154,221 +105,96 @@ export default function Dashboard({ dark, setDark }) {
     accent: dark ? "#60A5FA" : "#2563EB",
   };
 
-  const cardColors = [
-    "linear-gradient(135deg,#1E3A5F,#2563EB)",
-    "linear-gradient(135deg,#2563EB,#60A5FA)",
-    "linear-gradient(135deg,#1E40AF,#2563EB)",
-    "linear-gradient(135deg,#0F172A,#1E3A5F)",
-  ];
-
   return (
     <div style={{ fontFamily: "'Segoe UI', sans-serif", background: t.bg, minHeight: "100vh", color: t.text }}>
       <Navbar dark={dark} setDark={setDark} />
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 40px" }}>
+      {/* Header */}
+      <div style={{ background: `linear-gradient(135deg, ${dark ? "#0A0F1E" : "#1E3A5F"}, #2563EB)`, padding: "48px 40px 40px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#93C5FD", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>All Courses</div>
+          <h1 style={{ fontSize: 32, fontWeight: 800, color: "white", marginBottom: 8 }}>Course Library</h1>
+          <p style={{ fontSize: 14, color: "#93C5FD", marginBottom: 28 }}>Browse all available video lectures</p>
 
-        {/* Welcome */}
-        <div style={{ background: "linear-gradient(135deg,#1E3A5F,#2563EB)", borderRadius: 16, padding: "28px 32px", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: "white", marginBottom: 4 }}>Welcome back, {user?.name}! 👋</h2>
-            <p style={{ fontSize: 13, color: "#93C5FD" }}>{user?.department} • {user?.university}</p>
-          </div>
-          <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#60A5FA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: "#0F172A" }}>
-            {initials}
+          {/* Search */}
+          <div style={{ display: "flex", background: "rgba(255,255,255,0.1)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 10, overflow: "hidden", maxWidth: 480, backdropFilter: "blur(10px)" }}>
+            <input type="text" placeholder="Search courses or instructors..." value={search} onChange={e => setSearch(e.target.value)}
+              style={{ flex: 1, padding: "12px 16px", border: "none", outline: "none", fontSize: 13, color: "white", background: "transparent" }} />
+            <span style={{ padding: "12px 16px", color: "rgba(255,255,255,0.6)", fontSize: 16 }}>🔍</span>
           </div>
         </div>
+      </div>
 
-        {/* Tabs */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-          {[["courses", "📚 My Courses"], ["notes", "📝 Notes"]].map(([key, label]) => (
-            <button key={key} onClick={() => setActiveTab(key)} style={{
-              padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
-              background: activeTab === key ? t.btnBg : t.cardBg,
-              color: activeTab === key ? "white" : t.text2,
-              border: activeTab === key ? "none" : `1px solid ${t.border}`,
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 40px" }}>
+
+        {/* Department Filter */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 28, flexWrap: "wrap" }}>
+          {depts.map(d => (
+            <button key={d} onClick={() => setFilterDept(d)} style={{
+              padding: "7px 18px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
+              background: filterDept === d ? t.accent : t.cardBg,
+              color: filterDept === d ? "white" : t.text2,
+              border: filterDept === d ? "none" : `1px solid ${t.border}`,
               transition: "all 0.2s"
             }}>
-              {label}
+              {d}
             </button>
           ))}
         </div>
 
-        {/* COURSES TAB */}
-        {activeTab === "courses" && (
-          <div>
-            {/* Sub tabs */}
-            <div style={{ display: "flex", gap: 6, marginBottom: 20, borderBottom: `1px solid ${t.border}`, paddingBottom: 12 }}>
-              {[["my", "My Courses"], ["browse", "Browse All"]].map(([key, label]) => (
-                <button key={key} onClick={() => setTab(key)} style={{
-                  padding: "7px 18px", borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: "pointer",
-                  background: tab === key ? t.accent : "transparent",
-                  color: tab === key ? "white" : t.text2,
-                  border: tab === key ? "none" : `1px solid ${t.border}`,
-                  transition: "all 0.2s"
-                }}>
-                  {label}
-                </button>
-              ))}
-            </div>
+        {/* Results count */}
+        <div style={{ fontSize: 13, color: t.text2, marginBottom: 20, opacity: 0.7 }}>
+          {loading ? "Loading..." : `${filtered.length} courses found`}
+        </div>
 
-            {/* Search */}
-            <div style={{ display: "flex", background: t.inputBg, border: `1.5px solid ${t.border}`, borderRadius: 10, overflow: "hidden", maxWidth: 400, marginBottom: 20 }}>
-              <input type="text" placeholder="Search courses..." value={search} onChange={e => setSearch(e.target.value)}
-                style={{ flex: 1, padding: "10px 14px", border: "none", outline: "none", fontSize: 13, color: t.text, background: "transparent" }} />
-              <span style={{ padding: "10px 14px", color: t.text2, fontSize: 16 }}>🔍</span>
-            </div>
-
-            {/* Course Grid */}
-            {filtered.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "48px", color: t.text2 }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-                <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 6 }}>
-                  {tab === "my" ? "No courses yet" : "No courses found"}
-                </div>
-                <div style={{ fontSize: 13 }}>
-                  {tab === "my" ? "Browse all courses and add some!" : "Try a different search term"}
-                </div>
-                {tab === "my" && (
-                  <button onClick={() => setTab("browse")} style={{ marginTop: 16, background: t.btnBg, color: "white", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                    Browse Courses →
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-                {filtered.map((course, i) => {
-                  const isEnrolled = myCourses.find(c => c.id === course.id);
-                  return (
-                    <div key={course.id} style={{ background: t.cardBg, border: `1px solid ${isEnrolled ? t.accent : t.border}`, borderRadius: 14, overflow: "hidden", transition: "all 0.2s" }}
-                      onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
-                      onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
-                      <div style={{
-                        height: 100, position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
-                        background: thumbnails[course.id]
-                          ? `#000 url(${thumbnails[course.id]}) center/cover no-repeat`
-                          : cardColors[i % cardColors.length]
-                      }}>
-                        {thumbnails[course.id] && (
-                          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.28)" }} />
-                        )}
-                        <div style={{ position: "absolute", top: 8, left: 8, zIndex: 1, background: "#60A5FA", color: "#0F172A", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>{course.department}</div>
-                        {isEnrolled && <div style={{ position: "absolute", top: 8, right: 8, zIndex: 1, background: "#22C55E", color: "white", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>✓ Enrolled</div>}
-                        <div style={{ zIndex: 1, width: 36, height: 36, background: "white", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>▶</div>
-                      </div>
-                      <div style={{ padding: 14 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 3 }}>{course.title}</div>
-                        <div style={{ fontSize: 11, color: t.text2, marginBottom: 12, opacity: 0.8 }}>{course.instructor}</div>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button onClick={() => toggleCourse(course)} style={{
-                            flex: 1, padding: "7px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
-                            background: isEnrolled ? "rgba(239,68,68,0.1)" : t.btnBg,
-                            color: isEnrolled ? "#EF4444" : "white",
-                            transition: "all 0.2s"
-                          }}>
-                            {isEnrolled ? "Remove" : "+ Add"}
-                          </button>
-                          {isEnrolled && (
-                            <button onClick={() => openPlaylist(course)} style={{ flex: 1, padding: "7px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", background: t.bg2, color: t.accent, border: `1px solid ${t.border}`, transition: "all 0.2s" }}>
-                              ▶ Videos
-                            </button>
-                          )}
-                          {isEnrolled && (
-                            <button onClick={() => openNotes(course)} style={{ flex: 1, padding: "7px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", background: t.bg2, color: t.accent, border: `1px solid ${t.border}`, transition: "all 0.2s" }}>
-                              📝 Notes
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+        {/* Course Grid */}
+        {loading ? (
+          <div style={{ textAlign: "center", padding: 48, color: t.text2 }}>Loading courses...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: "center", padding: 48, color: t.text2 }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 6 }}>No courses found</div>
+            <div style={{ fontSize: 13 }}>Try a different search or filter</div>
           </div>
-        )}
-
-        {/* NOTES TAB */}
-        {activeTab === "notes" && (
-          <div>
-            {!selectedCourse ? (
-              <div style={{ textAlign: "center", padding: "48px", color: t.text2 }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
-                <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 6 }}>No course selected</div>
-                <div style={{ fontSize: 13, marginBottom: 16 }}>Go to My Courses and click Notes on a course</div>
-                <button onClick={() => setActiveTab("courses")} style={{ background: t.btnBg, color: "white", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                  Go to Courses →
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: t.text2, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Notes for</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: t.text }}>{selectedCourse.title}</div>
-                  </div>
-                  <button onClick={handleSaveNote} disabled={saving} style={{ background: t.btnBg, color: "white", border: "none", padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
-                    {saving ? "Saving..." : "💾 Save Notes"}
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }}>
+            {filtered.map((course, i) => (
+              <div key={course.id}
+                onClick={() => openPlaylist(course)}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = dark ? "0 12px 32px rgba(0,0,0,0.4)" : "0 12px 32px rgba(37,99,235,0.15)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+                style={{ background: t.cardBg, border: `1px solid ${t.border}`, borderRadius: 14, overflow: "hidden", transition: "all 0.25s", cursor: "pointer" }}>
+                <div style={{
+                  height: 130, position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
+                  background: thumbnails[course.id]
+                    ? `#000 url(${thumbnails[course.id]}) center/cover no-repeat`
+                    : cardColors[i % cardColors.length]
+                }}>
+                  {thumbnails[course.id] && (
+                    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.28)" }} />
+                  )}
+                  <div style={{ position: "absolute", top: 10, left: 10, zIndex: 1, background: "#60A5FA", color: "#0F172A", fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5 }}>{course.department}</div>
+                  <div style={{ zIndex: 1, width: 44, height: 44, background: "white", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>▶</div>
+                </div>
+                <div style={{ padding: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 4, lineHeight: 1.4 }}>{course.title}</div>
+                  <div style={{ fontSize: 11, color: t.text2, marginBottom: 12, opacity: 0.8 }}>{course.instructor}</div>
+                  <button onClick={(e) => handleAddCourse(e, course)} style={{ width: "100%", background: t.btnBg, color: "white", border: "none", padding: "8px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                    Add to My Courses →
                   </button>
                 </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-
-                  {/* Text Notes */}
-                  <div style={{ background: t.cardBg, border: `1px solid ${t.border}`, borderRadius: 14, padding: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 12 }}>📄 Text Notes</div>
-                    <textarea value={notes.text} onChange={e => setNotes(prev => ({ ...prev, text: e.target.value }))}
-                      placeholder="Write your notes here..."
-                      style={{ width: "100%", minHeight: 200, background: t.inputBg, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "12px", fontSize: 13, color: t.text, outline: "none", resize: "vertical", fontFamily: "'Segoe UI', sans-serif", boxSizing: "border-box", lineHeight: 1.7 }} />
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-                    {/* Highlights */}
-                    <div style={{ background: t.cardBg, border: `1px solid ${t.border}`, borderRadius: 14, padding: 20 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 12 }}>🌟 Key Highlights</div>
-                      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                        <input type="text" placeholder="Add a highlight..." value={newHighlight} onChange={e => setNewHighlight(e.target.value)}
-                          onKeyDown={e => e.key === "Enter" && addHighlight()}
-                          style={{ flex: 1, background: t.inputBg, border: `1.5px solid ${t.border}`, borderRadius: 7, padding: "8px 12px", fontSize: 12, color: t.text, outline: "none" }} />
-                        <button onClick={addHighlight} style={{ background: t.btnBg, color: "white", border: "none", padding: "8px 14px", borderRadius: 7, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>+</button>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 140, overflowY: "auto" }}>
-                        {notes.highlights.map((h, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: dark ? "rgba(37,99,235,0.15)" : "rgba(37,99,235,0.06)", border: `1px solid ${dark ? "rgba(96,165,250,0.2)" : "rgba(37,99,235,0.12)"}`, borderRadius: 7, padding: "8px 12px" }}>
-                            <span style={{ fontSize: 12, color: t.accent }}>⭐</span>
-                            <span style={{ flex: 1, fontSize: 12, color: t.text }}>{h}</span>
-                            <button onClick={() => removeHighlight(i)} style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontSize: 14, padding: 0 }}>✕</button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Checklist */}
-                    <div style={{ background: t.cardBg, border: `1px solid ${t.border}`, borderRadius: 14, padding: 20 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 12 }}>✅ Checklist</div>
-                      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                        <input type="text" placeholder="Add a task..." value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)}
-                          onKeyDown={e => e.key === "Enter" && addCheckItem()}
-                          style={{ flex: 1, background: t.inputBg, border: `1.5px solid ${t.border}`, borderRadius: 7, padding: "8px 12px", fontSize: 12, color: t.text, outline: "none" }} />
-                        <button onClick={addCheckItem} style={{ background: t.btnBg, color: "white", border: "none", padding: "8px 14px", borderRadius: 7, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>+</button>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 140, overflowY: "auto" }}>
-                        {notes.checklist.map((item, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0" }}>
-                            <input type="checkbox" checked={item.done} onChange={() => toggleCheck(i)} style={{ cursor: "pointer", accentColor: t.accent, width: 15, height: 15 }} />
-                            <span style={{ flex: 1, fontSize: 12, color: t.text, textDecoration: item.done ? "line-through" : "none", opacity: item.done ? 0.5 : 1 }}>{item.text}</span>
-                            <button onClick={() => removeCheck(i)} style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontSize: 14, padding: 0 }}>✕</button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
-            )}
+            ))}
           </div>
         )}
       </div>
+
+      {/* Added to My Courses toast */}
+      {addedMsg && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "#16A34A", color: "white", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,0.2)", zIndex: 200 }}>
+          ✅ {addedMsg}
+        </div>
+      )}
 
       {/* Playlist Modal */}
       {viewingCourse && (
@@ -414,6 +240,7 @@ export default function Dashboard({ dark, setDark }) {
           </div>
         </div>
       )}
+      <Footer t={t} />
     </div>
   );
 }

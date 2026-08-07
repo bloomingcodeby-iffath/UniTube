@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { getUserCourses, getAllCourses, selectCourse, removeCourse, getNotes, saveNote, getPlaylist, getCourseThumbnail } from "../api/api";
+import Footer from "../components/Footer";
 
 export default function Dashboard({ dark, setDark }) {
   const navigate = useNavigate();
@@ -478,6 +479,7 @@ export default function Dashboard({ dark, setDark }) {
           </div>
         </div>
       )}
+      <Footer t={t} />
     </div>
   );
 }
