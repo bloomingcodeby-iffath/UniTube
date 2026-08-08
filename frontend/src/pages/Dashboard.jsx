@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { getUserCourses, getAllCourses, selectCourse, removeCourse, getNotes, saveNote, getPlaylist, getCourseThumbnail } from "../api/api";
-import Footer from "../components/Footer";
 
 export default function Dashboard({ dark, setDark }) {
   const navigate = useNavigate();
@@ -67,15 +66,10 @@ export default function Dashboard({ dark, setDark }) {
 
   async function openPlaylist(course) {
     setViewingCourse(course);
-    setSelectedCourse(course);
     setLoadingPlaylist(true);
     try {
-      const [playlistRes, notesRes] = await Promise.all([
-        getPlaylist(token, course.id),
-        getNotes(token, course.id),
-      ]);
-      setPlaylistItems(playlistRes.playlists || []);
-      setNotes(notesRes.notes || { text: "", highlights: [], checklist: [] });
+      const res = await getPlaylist(token, course.id);
+      setPlaylistItems(res.playlists || []);
     } catch {
       setPlaylistItems([]);
     }
@@ -179,8 +173,20 @@ export default function Dashboard({ dark, setDark }) {
             <h2 style={{ fontSize: 22, fontWeight: 700, color: "white", marginBottom: 4 }}>Welcome back, {user?.name}! 👋</h2>
             <p style={{ fontSize: 13, color: "#93C5FD" }}>{user?.department} •   {user?.year_semester} • {user?.university}</p>
           </div>
-          <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#60A5FA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: "#0F172A" }}>
-            {initials}
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button onClick={() => navigate("/profile")} style={{
+              background: "rgba(255,255,255,0.15)", color: "white",
+              border: "1px solid rgba(255,255,255,0.3)", padding: "8px 16px",
+              borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
+              transition: "background 0.2s"
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.25)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}>
+              ✏️ Edit Profile
+            </button>
+            <div onClick={() => navigate("/profile")} style={{ width: 52, height: 52, borderRadius: "50%", background: "#60A5FA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: "#0F172A", cursor: "pointer" }}>
+              {initials}
+            </div>
           </div>
         </div>
 
@@ -376,110 +382,50 @@ export default function Dashboard({ dark, setDark }) {
         )}
       </div>
 
-      {/* Video + Notes split view */}
+      {/* Playlist Modal */}
       {viewingCourse && (
         <div onClick={closePlaylist} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: t.cardBg, borderRadius: 16, maxWidth: 1200, width: "100%", maxHeight: "88vh", display: "flex", overflow: "hidden" }}>
-
-            {/* LEFT: video(s) */}
-            <div style={{ flex: 1, minWidth: 0, padding: 28, overflowY: "auto" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-                <div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: t.text }}>{viewingCourse.title}</div>
-                  <div style={{ fontSize: 12, color: t.text2, opacity: 0.8 }}>{viewingCourse.department}</div>
-                </div>
-                <button onClick={closePlaylist} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: t.text }}>✕</button>
+          <div onClick={e => e.stopPropagation()} style={{ background: t.cardBg, borderRadius: 16, maxWidth: 860, width: "100%", maxHeight: "85vh", overflowY: "auto", padding: 28 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: t.text }}>{viewingCourse.title}</div>
+                <div style={{ fontSize: 12, color: t.text2, opacity: 0.8 }}>{viewingCourse.department}</div>
               </div>
-
-              {loadingPlaylist ? (
-                <div style={{ textAlign: "center", padding: 32, color: t.text2 }}>Loading videos...</div>
-              ) : playlistItems.length === 0 ? (
-                <div style={{ textAlign: "center", padding: 32, color: t.text2 }}>
-                  No videos added for this course yet.
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  {playlistItems.map(p => (
-                    <div key={p.playlist_id} style={{ border: `1px solid ${t.border}`, borderRadius: 12, overflow: "hidden" }}>
-                      <div style={{ position: "relative", paddingBottom: "56.25%", height: 0 }}>
-                        <iframe
-                          src={toEmbedUrl(p.yt_url)}
-                          title={p.playlist_title}
-                          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
-                          allowFullScreen
-                        />
-                      </div>
-                      <div style={{ padding: 12 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{p.playlist_title}</div>
-                        <div style={{ fontSize: 11, color: t.text2, opacity: 0.8, marginBottom: 8 }}>{p.channel_name} · {p.language}</div>
-                        <a href={p.yt_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: t.accent, fontWeight: 600, textDecoration: "none" }}>
-                          ▶ Open full playlist on YouTube →
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <button onClick={closePlaylist} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: t.text }}>✕</button>
             </div>
 
-            {/* RIGHT: notes for this course, editable while the video plays */}
-            <div style={{ width: 340, flexShrink: 0, borderLeft: `1px solid ${t.border}`, padding: 20, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>📝 Notes</div>
-                <button onClick={handleSaveNote} disabled={saving} style={{ background: t.btnBg, color: "white", border: "none", padding: "6px 14px", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
-                  {saving ? "Saving..." : "💾 Save"}
-                </button>
+            {loadingPlaylist ? (
+              <div style={{ textAlign: "center", padding: 32, color: t.text2 }}>Loading videos...</div>
+            ) : playlistItems.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 32, color: t.text2 }}>
+                No videos added for this course yet.
               </div>
-
-              <textarea value={notes.text} onChange={e => setNotes(prev => ({ ...prev, text: e.target.value }))}
-                placeholder="Write your notes while watching..."
-                style={{ width: "100%", minHeight: 160, background: t.inputBg, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "10px", fontSize: 12, color: t.text, outline: "none", resize: "vertical", fontFamily: "'Segoe UI', sans-serif", boxSizing: "border-box", lineHeight: 1.6 }} />
-
-              {/* Highlights */}
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: t.text, marginBottom: 8 }}>🌟 Highlights</div>
-                <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                  <input type="text" placeholder="Add a highlight..." value={newHighlight} onChange={e => setNewHighlight(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && addHighlight()}
-                    style={{ flex: 1, background: t.inputBg, border: `1.5px solid ${t.border}`, borderRadius: 6, padding: "6px 10px", fontSize: 11, color: t.text, outline: "none" }} />
-                  <button onClick={addHighlight} style={{ background: t.btnBg, color: "white", border: "none", padding: "6px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>+</button>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5, maxHeight: 100, overflowY: "auto" }}>
-                  {notes.highlights.map((h, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, background: dark ? "rgba(37,99,235,0.15)" : "rgba(37,99,235,0.06)", border: `1px solid ${dark ? "rgba(96,165,250,0.2)" : "rgba(37,99,235,0.12)"}`, borderRadius: 6, padding: "6px 10px" }}>
-                      <span style={{ fontSize: 11, color: t.accent }}>⭐</span>
-                      <span style={{ flex: 1, fontSize: 11, color: t.text }}>{h}</span>
-                      <button onClick={() => removeHighlight(i)} style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontSize: 12, padding: 0 }}>✕</button>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {playlistItems.map(p => (
+                  <div key={p.playlist_id} style={{ border: `1px solid ${t.border}`, borderRadius: 12, overflow: "hidden" }}>
+                    <div style={{ position: "relative", paddingBottom: "56.25%", height: 0 }}>
+                      <iframe
+                        src={toEmbedUrl(p.yt_url)}
+                        title={p.playlist_title}
+                        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                        allowFullScreen
+                      />
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Checklist */}
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: t.text, marginBottom: 8 }}>✅ Checklist</div>
-                <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                  <input type="text" placeholder="Add a task..." value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && addCheckItem()}
-                    style={{ flex: 1, background: t.inputBg, border: `1.5px solid ${t.border}`, borderRadius: 6, padding: "6px 10px", fontSize: 11, color: t.text, outline: "none" }} />
-                  <button onClick={addCheckItem} style={{ background: t.btnBg, color: "white", border: "none", padding: "6px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>+</button>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5, maxHeight: 100, overflowY: "auto" }}>
-                  {notes.checklist.map((item, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
-                      <input type="checkbox" checked={item.done} onChange={() => toggleCheck(i)} style={{ cursor: "pointer", accentColor: t.accent, width: 13, height: 13 }} />
-                      <span style={{ flex: 1, fontSize: 11, color: t.text, textDecoration: item.done ? "line-through" : "none", opacity: item.done ? 0.5 : 1 }}>{item.text}</span>
-                      <button onClick={() => removeCheck(i)} style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontSize: 12, padding: 0 }}>✕</button>
+                    <div style={{ padding: 12 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{p.playlist_title}</div>
+                      <div style={{ fontSize: 11, color: t.text2, opacity: 0.8, marginBottom: 8 }}>{p.channel_name} · {p.language}</div>
+                      <a href={p.yt_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: t.accent, fontWeight: 600, textDecoration: "none" }}>
+                        ▶ Open full playlist on YouTube →
+                      </a>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
-            </div>
-
+            )}
           </div>
         </div>
       )}
-      <Footer t={t} />
     </div>
   );
 }
