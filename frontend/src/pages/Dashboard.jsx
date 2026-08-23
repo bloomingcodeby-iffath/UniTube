@@ -147,17 +147,25 @@ export default function Dashboard({ dark, setDark }) {
 
   const initials = user?.name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "U";
 
+  const hour = new Date().getHours();
+  const greeting = hour < 5 ? "Burning the midnight oil" : hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Working late";
+
+  const checklistDone = notes.checklist.filter(i => i.done).length;
+
   const t = {
-    bg: dark ? "#0F172A" : "#F9FAFB",
+    bg: dark ? "#0B1220" : "#F7F8FB",
     bg2: dark ? "#1E293B" : "#EFF6FF",
     text: dark ? "#F1F5F9" : "#111827",
-    text2: dark ? "#60A5FA" : "#2563EB",
-    cardBg: dark ? "#1E293B" : "#ffffff",
-    border: dark ? "#334155" : "#DBEAFE",
+    text2: dark ? "#93B4E8" : "#2563EB",
+    cardBg: dark ? "#161F32" : "#ffffff",
+    border: dark ? "#263248" : "#E4E9F5",
     navBg: dark ? "#0A0F1E" : "#1E3A5F",
     inputBg: dark ? "#0F172A" : "#F8FAFF",
     btnBg: dark ? "#2563EB" : "#1E3A5F",
     accent: dark ? "#60A5FA" : "#2563EB",
+    amber: "#F0A93A",
+    paper: dark ? "#141C2E" : "#FFFDF7",
+    paperLine: dark ? "rgba(96,165,250,0.08)" : "rgba(30,58,95,0.07)",
   };
 
   const cardColors = [
@@ -171,38 +179,79 @@ export default function Dashboard({ dark, setDark }) {
     <div style={{ fontFamily: "'Segoe UI', sans-serif", background: t.bg, minHeight: "100vh", color: t.text }}>
       <Navbar dark={dark} setDark={setDark} />
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 40px" }}>
+      <div style={{ maxWidth: 1140, margin: "0 auto", padding: "32px 40px" }}>
 
-         {/* Welcome */}
-        <div style={{ background: "linear-gradient(135deg,#1E3A5F,#2563EB)", borderRadius: 16, padding: "28px 32px", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: "white", marginBottom: 4 }}>Welcome back, {user?.name}! 👋</h2>
-            <p style={{ fontSize: 13, color: "#93C5FD" }}>{user?.department} • {user?.university}</p>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <button onClick={() => navigate("/profile")} style={{
-              background: "rgba(255,255,255,0.15)", color: "white",
-              border: "1px solid rgba(255,255,255,0.3)", padding: "8px 16px",
-              borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
-              transition: "background 0.2s"
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.25)"}
-              onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}>
-              ✏️ Edit Profile
-            </button>
-            <div onClick={() => navigate("/profile")} style={{ width: 52, height: 52, borderRadius: "50%", background: "#60A5FA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: "#0F172A", cursor: "pointer" }}>
-              {initials}
+        {/* Welcome — mesh-gradient hero with stats */}
+        <div style={{
+          position: "relative", overflow: "hidden",
+          background: "radial-gradient(120% 160% at 0% 0%, #2E5A9B 0%, #1E3A5F 45%, #0F1F38 100%)",
+          borderRadius: 20, padding: "34px 36px", marginBottom: 30,
+        }}>
+          {/* decorative glow blobs */}
+          <div style={{ position: "absolute", top: -60, right: -40, width: 220, height: 220, borderRadius: "50%", background: "radial-gradient(circle, rgba(96,165,250,0.35), transparent 70%)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: -80, left: "30%", width: 260, height: 260, borderRadius: "50%", background: "radial-gradient(circle, rgba(240,169,58,0.18), transparent 70%)", pointerEvents: "none" }} />
+
+          <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 20 }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#FBBF6C", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
+                {greeting}
+              </div>
+              <h2 style={{ fontSize: 26, fontWeight: 800, color: "white", marginBottom: 6, letterSpacing: "-0.02em" }}>
+                {user?.name} 👋
+              </h2>
+              <p style={{ fontSize: 13, color: "#B7CCEE" }}>{user?.department} • {user?.university} • •  {user?.year_semester}</p>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
+              {/* mini stats */}
+              <div style={{ display: "flex", gap: 18 }}>
+                <div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: "white" }}>{myCourses.length}</div>
+                  <div style={{ fontSize: 10, color: "#B7CCEE", textTransform: "uppercase", letterSpacing: "0.06em" }}>Enrolled</div>
+                </div>
+                <div style={{ width: 1, background: "rgba(255,255,255,0.15)" }} />
+                <div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: "white" }}>{allCourses.length}</div>
+                  <div style={{ fontSize: 10, color: "#B7CCEE", textTransform: "uppercase", letterSpacing: "0.06em" }}>Available</div>
+                </div>
+              </div>
+
+              <div style={{ width: 1, height: 40, background: "rgba(255,255,255,0.15)" }} />
+
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <button onClick={() => navigate("/profile")} style={{
+                  background: "rgba(255,255,255,0.14)", color: "white",
+                  border: "1px solid rgba(255,255,255,0.28)", padding: "9px 16px",
+                  borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  transition: "background 0.2s"
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.25)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.14)"}>
+                  ✏️ Edit Profile
+                </button>
+                <div onClick={() => navigate("/profile")} style={{
+                  width: 52, height: 52, borderRadius: "50%",
+                  background: "linear-gradient(135deg,#FBBF6C,#F0A93A)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 18, fontWeight: 800, color: "#1E1002", cursor: "pointer",
+                  boxShadow: "0 6px 18px rgba(240,169,58,0.35)"
+                }}>
+                  {initials}
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
         {/* Tabs */}
         <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
           {[["courses", "📚 My Courses"], ["notes", "📝 Notes"]].map(([key, label]) => (
             <button key={key} onClick={() => setActiveTab(key)} style={{
-              padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
+              padding: "10px 22px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer",
               background: activeTab === key ? t.btnBg : t.cardBg,
               color: activeTab === key ? "white" : t.text2,
               border: activeTab === key ? "none" : `1px solid ${t.border}`,
+              boxShadow: activeTab === key ? "0 6px 16px rgba(37,99,235,0.25)" : "none",
               transition: "all 0.2s"
             }}>
               {label}
@@ -217,7 +266,7 @@ export default function Dashboard({ dark, setDark }) {
             <div style={{ display: "flex", gap: 6, marginBottom: 20, borderBottom: `1px solid ${t.border}`, paddingBottom: 12 }}>
               {[["my", "My Courses"], ["browse", "Browse All"]].map(([key, label]) => (
                 <button key={key} onClick={() => setTab(key)} style={{
-                  padding: "7px 18px", borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: "pointer",
+                  padding: "7px 18px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
                   background: tab === key ? t.accent : "transparent",
                   color: tab === key ? "white" : t.text2,
                   border: tab === key ? "none" : `1px solid ${t.border}`,
@@ -229,7 +278,7 @@ export default function Dashboard({ dark, setDark }) {
             </div>
 
             {/* Search */}
-            <div style={{ display: "flex", background: t.inputBg, border: `1.5px solid ${t.border}`, borderRadius: 10, overflow: "hidden", maxWidth: 400, marginBottom: 20 }}>
+            <div style={{ display: "flex", background: t.inputBg, border: `1.5px solid ${t.border}`, borderRadius: 10, overflow: "hidden", maxWidth: 400, marginBottom: 22 }}>
               <input type="text" placeholder="Search courses..." value={search} onChange={e => setSearch(e.target.value)}
                 style={{ flex: 1, padding: "10px 14px", border: "none", outline: "none", fontSize: 13, color: t.text, background: "transparent" }} />
               <span style={{ padding: "10px 14px", color: t.text2, fontSize: 16 }}>🔍</span>
@@ -252,15 +301,20 @@ export default function Dashboard({ dark, setDark }) {
                 )}
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
                 {filtered.map((course, i) => {
                   const isEnrolled = myCourses.find(c => c.id === course.id);
                   return (
-                    <div key={course.id} style={{ background: t.cardBg, border: `1px solid ${isEnrolled ? t.accent : t.border}`, borderRadius: 14, overflow: "hidden", transition: "all 0.2s" }}
-                      onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
-                      onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
+                    <div key={course.id} style={{
+                      background: t.cardBg, borderRadius: 16, overflow: "hidden",
+                      border: `1px solid ${isEnrolled ? t.accent : t.border}`,
+                      boxShadow: isEnrolled ? `0 0 0 3px ${dark ? "rgba(96,165,250,0.12)" : "rgba(37,99,235,0.08)"}` : "none",
+                      transition: "transform 0.2s, box-shadow 0.2s"
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = dark ? "0 14px 30px rgba(0,0,0,0.4)" : "0 14px 30px rgba(37,99,235,0.14)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = isEnrolled ? `0 0 0 3px ${dark ? "rgba(96,165,250,0.12)" : "rgba(37,99,235,0.08)"}` : "none"; }}>
                       <div style={{
-                        height: 100, position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
+                        height: 104, position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
                         background: thumbnails[course.id]
                           ? `#000 url(${thumbnails[course.id]}) center/cover no-repeat`
                           : cardColors[i % cardColors.length]
@@ -268,16 +322,22 @@ export default function Dashboard({ dark, setDark }) {
                         {thumbnails[course.id] && (
                           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.28)" }} />
                         )}
-                        <div style={{ position: "absolute", top: 8, left: 8, zIndex: 1, background: "#60A5FA", color: "#0F172A", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>{course.department}</div>
-                        {isEnrolled && <div style={{ position: "absolute", top: 8, right: 8, zIndex: 1, background: "#22C55E", color: "white", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>✓ Enrolled</div>}
-                        <div style={{ zIndex: 1, width: 36, height: 36, background: "white", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>▶</div>
+                        {/* filmstrip notches - signature detail tying back to "video library" */}
+                        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 6, display: "flex", justifyContent: "space-evenly", zIndex: 1 }}>
+                          {Array.from({ length: 10 }).map((_, k) => (
+                            <div key={k} style={{ width: 5, height: 5, marginTop: 1, borderRadius: 1, background: "rgba(255,255,255,0.5)" }} />
+                          ))}
+                        </div>
+                        <div style={{ position: "absolute", top: 10, left: 8, zIndex: 1, background: "#60A5FA", color: "#0F172A", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>{course.department}</div>
+                        {isEnrolled && <div style={{ position: "absolute", top: 10, right: 8, zIndex: 1, background: "#22C55E", color: "white", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>✓ Enrolled</div>}
+                        <div style={{ zIndex: 1, width: 38, height: 38, background: "white", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, boxShadow: "0 4px 12px rgba(0,0,0,0.25)" }}>▶</div>
                       </div>
-                      <div style={{ padding: 14 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 3 }}>{course.title}</div>
-                        <div style={{ fontSize: 11, color: t.text2, marginBottom: 12, opacity: 0.8 }}>{course.instructor}</div>
+                      <div style={{ padding: 15 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 3, lineHeight: 1.3 }}>{course.title}</div>
+                        <div style={{ fontSize: 11, color: t.text2, marginBottom: 13, opacity: 0.8 }}>{course.instructor}</div>
                         <div style={{ display: "flex", gap: 8 }}>
                           <button onClick={() => toggleCourse(course)} style={{
-                            flex: 1, padding: "7px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
+                            flex: 1, padding: "7px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "none",
                             background: isEnrolled ? "rgba(239,68,68,0.1)" : t.btnBg,
                             color: isEnrolled ? "#EF4444" : "white",
                             transition: "all 0.2s"
@@ -285,12 +345,12 @@ export default function Dashboard({ dark, setDark }) {
                             {isEnrolled ? "Remove" : "+ Add"}
                           </button>
                           {isEnrolled && (
-                            <button onClick={() => openPlaylist(course)} style={{ flex: 1, padding: "7px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", background: t.bg2, color: t.accent, border: `1px solid ${t.border}`, transition: "all 0.2s" }}>
+                            <button onClick={() => openPlaylist(course)} style={{ flex: 1, padding: "7px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: t.bg2, color: t.accent, border: `1px solid ${t.border}`, transition: "all 0.2s" }}>
                               ▶ Videos
                             </button>
                           )}
                           {isEnrolled && (
-                            <button onClick={() => openNotes(course)} style={{ flex: 1, padding: "7px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", background: t.bg2, color: t.accent, border: `1px solid ${t.border}`, transition: "all 0.2s" }}>
+                            <button onClick={() => openNotes(course)} style={{ flex: 1, padding: "7px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: t.bg2, color: t.accent, border: `1px solid ${t.border}`, transition: "all 0.2s" }}>
                               📝 Notes
                             </button>
                           )}
@@ -323,19 +383,34 @@ export default function Dashboard({ dark, setDark }) {
                     <div style={{ fontSize: 11, color: t.text2, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Notes for</div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: t.text }}>{selectedCourse.title}</div>
                   </div>
-                  <button onClick={handleSaveNote} disabled={saving} style={{ background: t.btnBg, color: "white", border: "none", padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
+                  <button onClick={handleSaveNote} disabled={saving} style={{ background: t.btnBg, color: "white", border: "none", padding: "10px 22px", borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: saving ? 0.7 : 1, boxShadow: "0 6px 16px rgba(37,99,235,0.25)" }}>
                     {saving ? "Saving..." : "💾 Save Notes"}
                   </button>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
 
-                  {/* Text Notes */}
-                  <div style={{ background: t.cardBg, border: `1px solid ${t.border}`, borderRadius: 14, padding: 20 }}>
+                  {/* Text Notes — notebook paper look, this is the signature element */}
+                  <div style={{
+                    background: t.paper, border: `1px solid ${t.border}`, borderRadius: 14, padding: "20px 20px 20px 28px",
+                    position: "relative", overflow: "hidden"
+                  }}>
+                    {/* spiral-binding edge */}
+                    <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 18, background: dark ? "rgba(96,165,250,0.06)" : "rgba(30,58,95,0.04)", borderRight: `1px dashed ${t.border}` }}>
+                      {Array.from({ length: 14 }).map((_, k) => (
+                        <div key={k} style={{ width: 6, height: 6, borderRadius: "50%", background: t.bg, border: `1px solid ${t.border}`, margin: "16px auto 0" }} />
+                      ))}
+                    </div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 12 }}>📄 Text Notes</div>
                     <textarea value={notes.text} onChange={e => setNotes(prev => ({ ...prev, text: e.target.value }))}
                       placeholder="Write your notes here..."
-                      style={{ width: "100%", minHeight: 200, background: t.inputBg, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "12px", fontSize: 13, color: t.text, outline: "none", resize: "vertical", fontFamily: "'Segoe UI', sans-serif", boxSizing: "border-box", lineHeight: 1.7 }} />
+                      style={{
+                        width: "100%", minHeight: 200, background: "transparent", border: "none", outline: "none",
+                        fontSize: 13, color: t.text, resize: "vertical", fontFamily: "'Segoe UI', sans-serif",
+                        boxSizing: "border-box", lineHeight: "28px",
+                        backgroundImage: `repeating-linear-gradient(${t.paper}, ${t.paper} 27px, ${t.paperLine} 27px, ${t.paperLine} 28px)`,
+                        backgroundAttachment: "local",
+                      }} />
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -347,12 +422,12 @@ export default function Dashboard({ dark, setDark }) {
                         <input type="text" placeholder="Add a highlight..." value={newHighlight} onChange={e => setNewHighlight(e.target.value)}
                           onKeyDown={e => e.key === "Enter" && addHighlight()}
                           style={{ flex: 1, background: t.inputBg, border: `1.5px solid ${t.border}`, borderRadius: 7, padding: "8px 12px", fontSize: 12, color: t.text, outline: "none" }} />
-                        <button onClick={addHighlight} style={{ background: t.btnBg, color: "white", border: "none", padding: "8px 14px", borderRadius: 7, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>+</button>
+                        <button onClick={addHighlight} style={{ background: t.amber, color: "#1E1002", border: "none", padding: "8px 14px", borderRadius: 7, fontSize: 12, cursor: "pointer", fontWeight: 700 }}>+</button>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 140, overflowY: "auto" }}>
                         {notes.highlights.map((h, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: dark ? "rgba(37,99,235,0.15)" : "rgba(37,99,235,0.06)", border: `1px solid ${dark ? "rgba(96,165,250,0.2)" : "rgba(37,99,235,0.12)"}`, borderRadius: 7, padding: "8px 12px" }}>
-                            <span style={{ fontSize: 12, color: t.accent }}>⭐</span>
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: dark ? "rgba(240,169,58,0.1)" : "rgba(240,169,58,0.08)", border: `1px solid ${dark ? "rgba(240,169,58,0.25)" : "rgba(240,169,58,0.2)"}`, borderRadius: 7, padding: "8px 12px" }}>
+                            <span style={{ fontSize: 12, color: t.amber }}>⭐</span>
                             <span style={{ flex: 1, fontSize: 12, color: t.text }}>{h}</span>
                             <button onClick={() => removeHighlight(i)} style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontSize: 14, padding: 0 }}>✕</button>
                           </div>
@@ -362,12 +437,22 @@ export default function Dashboard({ dark, setDark }) {
 
                     {/* Checklist */}
                     <div style={{ background: t.cardBg, border: `1px solid ${t.border}`, borderRadius: 14, padding: 20 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 12 }}>✅ Checklist</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>✅ Checklist</div>
+                        {notes.checklist.length > 0 && (
+                          <div style={{ fontSize: 11, color: t.text2, fontWeight: 600 }}>{checklistDone}/{notes.checklist.length} done</div>
+                        )}
+                      </div>
+                      {notes.checklist.length > 0 && (
+                        <div style={{ height: 5, borderRadius: 3, background: t.inputBg, marginBottom: 14, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${(checklistDone / notes.checklist.length) * 100}%`, background: "linear-gradient(90deg,#22C55E,#4ADE80)", transition: "width 0.3s" }} />
+                        </div>
+                      )}
                       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                         <input type="text" placeholder="Add a task..." value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)}
                           onKeyDown={e => e.key === "Enter" && addCheckItem()}
                           style={{ flex: 1, background: t.inputBg, border: `1.5px solid ${t.border}`, borderRadius: 7, padding: "8px 12px", fontSize: 12, color: t.text, outline: "none" }} />
-                        <button onClick={addCheckItem} style={{ background: t.btnBg, color: "white", border: "none", padding: "8px 14px", borderRadius: 7, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>+</button>
+                        <button onClick={addCheckItem} style={{ background: t.btnBg, color: "white", border: "none", padding: "8px 14px", borderRadius: 7, fontSize: 12, cursor: "pointer", fontWeight: 700 }}>+</button>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 140, overflowY: "auto" }}>
                         {notes.checklist.map((item, i) => (
@@ -483,19 +568,14 @@ export default function Dashboard({ dark, setDark }) {
                       <button onClick={() => removeCheck(i)} style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontSize: 12, padding: 0 }}>✕</button>
                     </div>
                   ))}
-                      
-                  
                 </div>
               </div>
             </div>
 
           </div>
-          
         </div>
       )}
       <Footer t={t} />
     </div>
-    
   );
-  
 }

@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { getAllCourses, selectCourse, getPlaylist, getCourseThumbnail } from "../api/api";
-import Footer from "../components/Footer";
+import { getAllCourses, getUserCourses, selectCourse, getPlaylist, getCourseThumbnail } from "../api/api";
 
 export default function Courses({ dark, setDark }) {
   const navigate = useNavigate();
@@ -15,6 +14,7 @@ export default function Courses({ dark, setDark }) {
   const [playlistItems, setPlaylistItems] = useState([]);
   const [loadingPlaylist, setLoadingPlaylist] = useState(false);
   const [addedMsg, setAddedMsg] = useState("");
+  const [myCourseIds, setMyCourseIds] = useState([]);
   const [thumbnails, setThumbnails] = useState({});
   const token = localStorage.getItem("token");
 
@@ -37,8 +37,22 @@ export default function Courses({ dark, setDark }) {
 
   async function handleAddCourse(e, course) {
     e.stopPropagation();
-    await selectCourse(token, course.id);
-    setAddedMsg(`"${course.title}" added to your courses!`);
+
+    if (myCourseIds.includes(course.id)) {
+      setAddedMsg(`"${course.title}" is already in your courses`);
+      setTimeout(() => setAddedMsg(""), 2000);
+      return;
+    }
+
+    try {
+      await selectCourse(token, course.id);
+      setMyCourseIds((prev) => [...prev, course.id]);
+      setAddedMsg(`"${course.title}" added to your courses!`);
+    } catch {
+      // covers the rare race where it got added elsewhere between load and click
+      setMyCourseIds((prev) => (prev.includes(course.id) ? prev : [...prev, course.id]));
+      setAddedMsg(`"${course.title}" is already in your courses`);
+    }
     setTimeout(() => setAddedMsg(""), 2000);
   }
 
@@ -59,9 +73,13 @@ export default function Courses({ dark, setDark }) {
   useEffect(() => {
     async function load() {
       try {
-        const res = await getAllCourses(token);
-        const list = res.courses || [];
+        const [allRes, myRes] = await Promise.all([
+          getAllCourses(token),
+          getUserCourses(token),
+        ]);
+        const list = allRes.courses || [];
         setCourses(list);
+        setMyCourseIds((myRes.courses || []).map((c) => c.id));
 
         // fetch real YouTube thumbnails in the background - cards fall
         // back to the colored placeholder until each one resolves
@@ -179,8 +197,12 @@ export default function Courses({ dark, setDark }) {
                 <div style={{ padding: 16 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 4, lineHeight: 1.4 }}>{course.title}</div>
                   <div style={{ fontSize: 11, color: t.text2, marginBottom: 12, opacity: 0.8 }}>{course.instructor}</div>
-                  <button onClick={(e) => handleAddCourse(e, course)} style={{ width: "100%", background: t.btnBg, color: "white", border: "none", padding: "8px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                    Add to My Courses →
+                  <button onClick={(e) => handleAddCourse(e, course)} style={{
+                    width: "100%", border: "none", padding: "8px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                    background: myCourseIds.includes(course.id) ? "rgba(34,197,94,0.12)" : t.btnBg,
+                    color: myCourseIds.includes(course.id) ? "#16A34A" : "white",
+                  }}>
+                    {myCourseIds.includes(course.id) ? "✓ Added" : "Add to My Courses →"}
                   </button>
                 </div>
               </div>
@@ -240,7 +262,6 @@ export default function Courses({ dark, setDark }) {
           </div>
         </div>
       )}
-      <Footer t={t} />
     </div>
   );
 }
