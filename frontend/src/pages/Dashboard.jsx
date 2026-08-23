@@ -148,7 +148,7 @@ export default function Dashboard({ dark, setDark }) {
   const initials = user?.name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "U";
 
   const hour = new Date().getHours();
-  const greeting = hour < 5 ? "Burning the midnight oil" : hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Working late";
+  const greeting = hour < 5 ? "Burning the midnight oil" : hour < 12 ? "Hi, Morning Bird!" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Working late";
 
   const checklistDone = notes.checklist.filter(i => i.done).length;
 
