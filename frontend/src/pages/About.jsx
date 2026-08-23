@@ -3,6 +3,7 @@ import "aos/dist/aos.css";
 import { useEffect } from "react";
 import Navbar from "../components/Navbar";
 import { useNavigate } from "react-router-dom";
+import Footer from "../components/Footer";
 
 export default function About({ dark, setDark }) {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ useEffect(() => {
     { icon: "📚", title: "Course Library", desc: "Organized by department and subject for easy navigation." },
     { icon: "📝", title: "Smart Notes", desc: "Take notes, highlight key points and track your checklist per course." },
     { icon: "🔍", title: "Search & Filter", desc: "Find any lecture by subject, department, or instructor instantly." },
-    { icon: "📊", title: "Progress Tracking", desc: "Track your learning progress across all enrolled courses." },
+    { icon: "📊", title: "Easy to Learn", desc: "Improve  learning progress across all enrolled courses." },
     { icon: "24/7", title: "Always Available", desc: "Study at your own pace, on your own schedule." },
   ];
 
@@ -119,9 +120,7 @@ useEffect(() => {
       </div>
 
       {/* Footer */}
-      <footer style={{ background: t.navBg, padding: "24px 40px", textAlign: "center" }}>
-        <div style={{ fontSize: 11, color: "#93C5FD", opacity: 0.4 }}>© 2026 UniTube • Iffath n fariba</div>
-      </footer>
+      <Footer t={t} />
     </div>
   );
 }
