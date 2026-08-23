@@ -104,6 +104,33 @@ function mapUser(u) {
 }
 
 // ====================
+// PROFILE UPDATE
+// ====================
+
+// Backend expects: username, phone_number, institution, department,
+// batch, year_semester (JSON body) via PUT /auth/update-profile.
+// Only returns { message }, so the caller should update localStorage's
+// "user" themselves after a successful call.
+export async function updateProfile(token, data) {
+  const res = await fetch(`${BASE}/auth/update-profile`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({
+      username: data.username,
+      phone_number: data.phone_number,
+      institution: data.institution,
+      department: data.department,
+      batch: data.batch,
+      year_semester: data.year_semester,
+    }),
+  });
+  return handle(res); // { message: "Profile updated successfully" }
+}
+
+// ====================
 // COURSES
 // ====================
 

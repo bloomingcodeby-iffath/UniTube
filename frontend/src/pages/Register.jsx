@@ -117,7 +117,7 @@ export default function Register({ dark, setDark }) {
                 <select value={form.semester} onChange={e => set("semester", e.target.value)}
                   style={{ ...inputStyle, cursor: "pointer" }}>
                   <option value="">Select semester</option>
-                  {["1st Semester", "2nd Semester"].map(s => <option key={s}>{s}</option>)}
+                  {["1st Semester", "2nd Semester","3rd Semester"].map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
             </div>
