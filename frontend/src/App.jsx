@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
+import Profile from "./pages/Profile";
 
 // Protected Route
 function Protected({ children }) {
@@ -28,6 +29,9 @@ export default function App() {
         } />
         <Route path="/dashboard" element={
           <Protected><Dashboard dark={dark} setDark={setDark} /></Protected>
+        } />
+        <Route path="/profile" element={
+          <Protected><Profile dark={dark} setDark={setDark} /></Protected>
         } />
       </Routes>
     </BrowserRouter>
