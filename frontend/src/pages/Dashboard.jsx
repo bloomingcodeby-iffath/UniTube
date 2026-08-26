@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { getUserCourses, getAllCourses, selectCourse, removeCourse, getNotes, saveNote, getPlaylist, getCourseThumbnail, getAllUserNotes } from "../api/api";
+import { getUserCourses, getAllCourses, selectCourse, removeCourse, getNotes, saveNote, getPlaylist, getCourseThumbnail, getAllUserNotes, deleteNotesForCourse } from "../api/api";
 
 export default function Dashboard({ dark, setDark }) {
   const navigate = useNavigate();
@@ -145,6 +145,18 @@ export default function Dashboard({ dark, setDark }) {
     setSelectedCourse(null);
   }
 
+  async function handleDeleteNotes(e, course) {
+    e.stopPropagation(); // don't trigger the card's own onClick (openNotes)
+
+    await deleteNotesForCourse(token, course.id);
+    setNotedCourses(prev => prev.filter(c => c.id !== course.id));
+
+    if (selectedCourse?.id === course.id) {
+      setSelectedCourse(null);
+      setNotes({ text: "", highlights: [], checklist: [] });
+    }
+  }
+
   async function handleSaveNote() {
     if (!selectedCourse) return;
     setSaving(true);
@@ -246,7 +258,7 @@ export default function Dashboard({ dark, setDark }) {
               <h2 style={{ fontSize: 26, fontWeight: 800, color: "white", marginBottom: 6, letterSpacing: "-0.02em" }}>
                 {user?.name} 👋
               </h2>
-              <p style={{ fontSize: 13, color: "#B7CCEE" }}>{user?.department} • {user?.university} • •  {user?.year_semester}</p>
+               <p style={{ fontSize: 13, color: "#B7CCEE" }}>{user?.department} • {user?.university} • •  {user?.year_semester}</p>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
@@ -433,12 +445,21 @@ export default function Dashboard({ dark, setDark }) {
                     {notedCourses.map(course => (
                       <div key={course.id} onClick={() => openNotes(course)} style={{
                         background: t.cardBg, border: `1px solid ${t.border}`, borderRadius: 14,
-                        padding: 18, cursor: "pointer", transition: "all 0.2s"
+                        padding: 18, cursor: "pointer", transition: "all 0.2s", position: "relative"
                       }}
                         onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.borderColor = t.accent; }}
                         onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.borderColor = t.border; }}>
+                        <button onClick={(e) => handleDeleteNotes(e, course)} title="Delete notes" style={{
+                          position: "absolute", top: 10, right: 10, background: "none", border: "none",
+                          color: "#EF4444", cursor: "pointer", fontSize: 14, padding: 4, opacity: 0.7,
+                          transition: "opacity 0.2s"
+                        }}
+                          onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                          onMouseLeave={e => e.currentTarget.style.opacity = 0.7}>
+                          🗑️
+                        </button>
                         <div style={{ fontSize: 22, marginBottom: 8 }}>📔</div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: t.text, marginBottom: 3 }}>{course.title}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: t.text, marginBottom: 3, paddingRight: 20 }}>{course.title}</div>
                         <div style={{ fontSize: 11, color: t.text2, opacity: 0.8 }}>{course.department}</div>
                       </div>
                     ))}
@@ -463,6 +484,9 @@ export default function Dashboard({ dark, setDark }) {
                     )}
                     <button onClick={handleSaveNote} disabled={saving} style={{ background: t.btnBg, color: "white", border: "none", padding: "10px 22px", borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: saving ? 0.7 : 1, boxShadow: "0 6px 16px rgba(37,99,235,0.25)" }}>
                       {saving ? "Saving..." : "💾 Save Notes"}
+                    </button>
+                    <button onClick={(e) => handleDeleteNotes(e, selectedCourse)} style={{ background: "rgba(239,68,68,0.1)", color: "#EF4444", border: "none", padding: "10px 16px", borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                      🗑️ Delete
                     </button>
                   </div>
                 </div>
