@@ -16,6 +16,7 @@ export default function Dashboard({ dark, setDark }) {
   const [newCheckItem, setNewCheckItem] = useState("");
   const [newHighlight, setNewHighlight] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
   const [tab, setTab] = useState("my"); // my | browse
   const [viewingCourse, setViewingCourse] = useState(null);
   const [thumbnails, setThumbnails] = useState({});
@@ -147,8 +148,16 @@ export default function Dashboard({ dark, setDark }) {
   async function handleSaveNote() {
     if (!selectedCourse) return;
     setSaving(true);
-    await saveNote(token, selectedCourse.id, notes);
-    setNotedCourses(prev => prev.some(c => c.id === selectedCourse.id) ? prev : [...prev, selectedCourse]);
+    setSaveMessage("");
+    try {
+      await saveNote(token, selectedCourse.id, notes);
+      setNotedCourses(prev => prev.some(c => c.id === selectedCourse.id) ? prev : [...prev, selectedCourse]);
+      setSaveMessage("✓ Note saved");
+      setTimeout(() => setSaveMessage(""), 2500);
+    } catch {
+      setSaveMessage("Failed to save note");
+      setTimeout(() => setSaveMessage(""), 2500);
+    }
     setSaving(false);
   }
 
@@ -237,7 +246,7 @@ export default function Dashboard({ dark, setDark }) {
               <h2 style={{ fontSize: 26, fontWeight: 800, color: "white", marginBottom: 6, letterSpacing: "-0.02em" }}>
                 {user?.name} 👋
               </h2>
-               <p style={{ fontSize: 13, color: "#B7CCEE" }}>{user?.department} • {user?.university} • •  {user?.year_semester}</p>
+              <p style={{ fontSize: 13, color: "#B7CCEE" }}>{user?.department} • {user?.university}</p>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
@@ -446,9 +455,16 @@ export default function Dashboard({ dark, setDark }) {
                     <div style={{ fontSize: 11, color: t.text2, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Notes for</div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: t.text }}>{selectedCourse.title}</div>
                   </div>
-                  <button onClick={handleSaveNote} disabled={saving} style={{ background: t.btnBg, color: "white", border: "none", padding: "10px 22px", borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: saving ? 0.7 : 1, boxShadow: "0 6px 16px rgba(37,99,235,0.25)" }}>
-                    {saving ? "Saving..." : "💾 Save Notes"}
-                  </button>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    {saveMessage && (
+                      <span style={{ fontSize: 13, fontWeight: 600, color: saveMessage.includes("Failed") ? "#EF4444" : "#22C55E" }}>
+                        {saveMessage}
+                      </span>
+                    )}
+                    <button onClick={handleSaveNote} disabled={saving} style={{ background: t.btnBg, color: "white", border: "none", padding: "10px 22px", borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: saving ? 0.7 : 1, boxShadow: "0 6px 16px rgba(37,99,235,0.25)" }}>
+                      {saving ? "Saving..." : "💾 Save Notes"}
+                    </button>
+                  </div>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
@@ -586,9 +602,16 @@ export default function Dashboard({ dark, setDark }) {
             <div style={{ width: 340, flexShrink: 0, borderLeft: `1px solid ${t.border}`, padding: 20, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>📝 Notes</div>
-                <button onClick={handleSaveNote} disabled={saving} style={{ background: t.btnBg, color: "white", border: "none", padding: "6px 14px", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
-                  {saving ? "Saving..." : "💾 Save"}
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {saveMessage && (
+                    <span style={{ fontSize: 11, fontWeight: 600, color: saveMessage.includes("Failed") ? "#EF4444" : "#22C55E" }}>
+                      {saveMessage}
+                    </span>
+                  )}
+                  <button onClick={handleSaveNote} disabled={saving} style={{ background: t.btnBg, color: "white", border: "none", padding: "6px 14px", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
+                    {saving ? "Saving..." : "💾 Save"}
+                  </button>
+                </div>
               </div>
 
               <textarea value={notes.text} onChange={e => setNotes(prev => ({ ...prev, text: e.target.value }))}
