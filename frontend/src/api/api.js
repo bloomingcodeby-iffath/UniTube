@@ -5,7 +5,7 @@
 // (Run backend with: uvicorn main:app --reload --port 8000)
 // ============================================================
 
-const BASE = "http://localhost:8000";
+const BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 // ------------------------------------------------------------
 // Small helper: parse JSON safely and throw on non-2xx so
