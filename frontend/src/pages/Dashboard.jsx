@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { getUserCourses, getAllCourses, selectCourse, removeCourse, getNotes, saveNote, getPlaylist, getCourseThumbnail } from "../api/api";
+import { getUserCourses, getAllCourses, selectCourse, removeCourse, getNotes, saveNote, getPlaylist, getCourseThumbnail, getAllUserNotes } from "../api/api";
 
 export default function Dashboard({ dark, setDark }) {
   const navigate = useNavigate();
@@ -21,6 +21,8 @@ export default function Dashboard({ dark, setDark }) {
   const [thumbnails, setThumbnails] = useState({});
   const [playlistItems, setPlaylistItems] = useState([]);
   const [loadingPlaylist, setLoadingPlaylist] = useState(false);
+  const [notedCourses, setNotedCourses] = useState([]);
+  const [loadingNotedCourses, setLoadingNotedCourses] = useState(false);
 
   const token = localStorage.getItem("token");
 
@@ -107,10 +109,46 @@ export default function Dashboard({ dark, setDark }) {
     }
   }
 
+  // Builds the "courses I've taken notes on" list shown when opening the
+  // Notes tab - matches each distinct course_id found in the student's
+  // notes against their enrolled/browsable courses to get a display name.
+  async function loadNotedCourses() {
+    setLoadingNotedCourses(true);
+    try {
+      const allNotes = await getAllUserNotes(token);
+      const courseIds = [...new Set(allNotes.map(n => n.course_id))];
+      const combined = [...myCourses, ...allCourses];
+      const matched = courseIds
+        .map(id => combined.find(c => c.id === id))
+        .filter(Boolean);
+      const unique = Array.from(new Map(matched.map(c => [c.id, c])).values());
+      setNotedCourses(unique);
+    } catch {
+      setNotedCourses([]);
+    }
+    setLoadingNotedCourses(false);
+  }
+
+  // Top-level tab click: switching to Notes always shows the list of
+  // courses that already have notes, rather than jumping straight into
+  // whichever note was edited most recently.
+  function handleTabClick(key) {
+    if (key === "notes") {
+      setSelectedCourse(null);
+      loadNotedCourses();
+    }
+    setActiveTab(key);
+  }
+
+  function backToNotesList() {
+    setSelectedCourse(null);
+  }
+
   async function handleSaveNote() {
     if (!selectedCourse) return;
     setSaving(true);
     await saveNote(token, selectedCourse.id, notes);
+    setNotedCourses(prev => prev.some(c => c.id === selectedCourse.id) ? prev : [...prev, selectedCourse]);
     setSaving(false);
   }
 
@@ -148,7 +186,7 @@ export default function Dashboard({ dark, setDark }) {
   const initials = user?.name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "U";
 
   const hour = new Date().getHours();
-  const greeting = hour < 5 ? "Burning the midnight oil" : hour < 12 ? "Hi, Morning Bird!" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Working late";
+  const greeting = hour < 5 ? "Burning the midnight oil" : hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Working late";
 
   const checklistDone = notes.checklist.filter(i => i.done).length;
 
@@ -199,7 +237,7 @@ export default function Dashboard({ dark, setDark }) {
               <h2 style={{ fontSize: 26, fontWeight: 800, color: "white", marginBottom: 6, letterSpacing: "-0.02em" }}>
                 {user?.name} 👋
               </h2>
-              <p style={{ fontSize: 13, color: "#B7CCEE" }}>{user?.department} • {user?.university} • •  {user?.year_semester}</p>
+               <p style={{ fontSize: 13, color: "#B7CCEE" }}>{user?.department} • {user?.university} • •  {user?.year_semester}</p>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
@@ -246,7 +284,7 @@ export default function Dashboard({ dark, setDark }) {
         {/* Tabs */}
         <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
           {[["courses", "📚 My Courses"], ["notes", "📝 Notes"]].map(([key, label]) => (
-            <button key={key} onClick={() => setActiveTab(key)} style={{
+            <button key={key} onClick={() => handleTabClick(key)} style={{
               padding: "10px 22px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer",
               background: activeTab === key ? t.btnBg : t.cardBg,
               color: activeTab === key ? "white" : t.text2,
@@ -368,18 +406,43 @@ export default function Dashboard({ dark, setDark }) {
         {activeTab === "notes" && (
           <div>
             {!selectedCourse ? (
-              <div style={{ textAlign: "center", padding: "48px", color: t.text2 }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
-                <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 6 }}>No course selected</div>
-                <div style={{ fontSize: 13, marginBottom: 16 }}>Go to My Courses and click Notes on a course</div>
-                <button onClick={() => setActiveTab("courses")} style={{ background: t.btnBg, color: "white", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                  Go to Courses →
-                </button>
-              </div>
+              loadingNotedCourses ? (
+                <div style={{ textAlign: "center", padding: "48px", color: t.text2 }}>Loading your notes...</div>
+              ) : notedCourses.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "48px", color: t.text2 }}>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 6 }}>No notes yet</div>
+                  <div style={{ fontSize: 13, marginBottom: 16 }}>Go to My Courses and click Notes on a course to start writing</div>
+                  <button onClick={() => setActiveTab("courses")} style={{ background: t.btnBg, color: "white", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                    Go to Courses →
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontSize: 13, color: t.text2, marginBottom: 14 }}>Courses you've taken notes on — click one to open it</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+                    {notedCourses.map(course => (
+                      <div key={course.id} onClick={() => openNotes(course)} style={{
+                        background: t.cardBg, border: `1px solid ${t.border}`, borderRadius: 14,
+                        padding: 18, cursor: "pointer", transition: "all 0.2s"
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.borderColor = t.accent; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.borderColor = t.border; }}>
+                        <div style={{ fontSize: 22, marginBottom: 8 }}>📔</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: t.text, marginBottom: 3 }}>{course.title}</div>
+                        <div style={{ fontSize: 11, color: t.text2, opacity: 0.8 }}>{course.department}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
             ) : (
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
                   <div>
+                    <button onClick={backToNotesList} style={{ background: "none", border: "none", color: t.text2, fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 8 }}>
+                      ← All notes
+                    </button>
                     <div style={{ fontSize: 11, color: t.text2, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Notes for</div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: t.text }}>{selectedCourse.title}</div>
                   </div>
@@ -392,6 +455,7 @@ export default function Dashboard({ dark, setDark }) {
 
                   {/* Text Notes — notebook paper look, this is the signature element */}
                   <div style={{
+
                     background: t.paper, border: `1px solid ${t.border}`, borderRadius: 14, padding: "20px 20px 20px 28px",
                     position: "relative", overflow: "hidden"
                   }}>
