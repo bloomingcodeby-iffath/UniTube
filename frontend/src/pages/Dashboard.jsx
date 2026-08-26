@@ -246,7 +246,7 @@ export default function Dashboard({ dark, setDark }) {
               <h2 style={{ fontSize: 26, fontWeight: 800, color: "white", marginBottom: 6, letterSpacing: "-0.02em" }}>
                 {user?.name} 👋
               </h2>
-              <p style={{ fontSize: 13, color: "#B7CCEE" }}>{user?.department} • {user?.university}</p>
+              <p style={{ fontSize: 13, color: "#B7CCEE" }}>{user?.department} • {user?.university} • •  {user?.year_semester}</p>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
