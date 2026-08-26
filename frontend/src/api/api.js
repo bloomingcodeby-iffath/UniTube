@@ -5,10 +5,7 @@
 // (Run backend with: uvicorn main:app --reload --port 8000)
 // ============================================================
 
-// In production, set REACT_APP_API_URL in your hosting provider's
-// environment variables (e.g. Render/Vercel) to your deployed backend URL,
-// for example: https://unitube-backend.onrender.com
-const BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const BASE = "http://localhost:8000";
 
 // ------------------------------------------------------------
 // Small helper: parse JSON safely and throw on non-2xx so
@@ -104,6 +101,33 @@ function mapUser(u) {
     year_semester: u.year_semester,
     role: u.role,
   };
+}
+
+// ====================
+// PROFILE UPDATE
+// ====================
+
+// Backend expects: username, phone_number, institution, department,
+// batch, year_semester (JSON body) via PUT /auth/update-profile.
+// Only returns { message }, so the caller should update localStorage's
+// "user" themselves after a successful call.
+export async function updateProfile(token, data) {
+  const res = await fetch(`${BASE}/auth/update-profile`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({
+      username: data.username,
+      phone_number: data.phone_number,
+      institution: data.institution,
+      department: data.department,
+      batch: data.batch,
+      year_semester: data.year_semester,
+    }),
+  });
+  return handle(res); // { message: "Profile updated successfully" }
 }
 
 // ====================
@@ -320,6 +344,16 @@ export async function getCourseThumbnail(token, courseId) {
 // So: we JSON-stringify the frontend's note object {text, highlights,
 // checklist} into note_text, and to "save" we delete any existing
 // note(s) for that course for this user, then add a fresh one.
+
+// Returns the raw list of all of the student's notes across every
+// course - [{ note_id, course_id, note_text, ... }] - used to build
+// a "courses I've taken notes on" list on the Dashboard.
+export async function getAllUserNotes(token) {
+  const res = await fetch(`${BASE}/notes/my`, {
+    headers: authHeaders(token),
+  });
+  return handle(res);
+}
 
 export async function getNotes(token, courseId) {
   const res = await fetch(`${BASE}/notes/my`, {
