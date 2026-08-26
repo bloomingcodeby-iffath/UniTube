@@ -5,7 +5,7 @@
 // (Run backend with: uvicorn main:app --reload --port 8000)
 // ============================================================
 
-const BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const BASE = "http://localhost:8000";
 
 // ------------------------------------------------------------
 // Small helper: parse JSON safely and throw on non-2xx so
@@ -375,6 +375,28 @@ export async function getNotes(token, courseId) {
     parsed = { text: latest.note_text || "", highlights: [], checklist: [] };
   }
   return { notes: parsed };
+}
+
+// Deletes every note the student has for a given course (there can be
+// more than one if saveNote's cleanup ever missed one). Used by the
+// "delete" button on the notes list in Dashboard.
+export async function deleteNotesForCourse(token, courseId) {
+  const res = await fetch(`${BASE}/notes/my`, {
+    headers: authHeaders(token),
+  });
+  const allNotes = await handle(res);
+  const courseNotes = allNotes.filter((n) => n.course_id === courseId);
+
+  await Promise.all(
+    courseNotes.map((n) =>
+      fetch(`${BASE}/notes/${n.note_id}`, {
+        method: "DELETE",
+        headers: authHeaders(token),
+      })
+    )
+  );
+
+  return { success: true };
 }
 
 export async function saveNote(token, courseId, noteData) {
