@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { getAllCourses, getUserCourses, selectCourse, getPlaylist, getCourseThumbnail } from "../api/api";
+import useIsMobile from "../hooks/useIsMobile";
 
 export default function Courses({ dark, setDark }) {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function Courses({ dark, setDark }) {
   const [myCourseIds, setMyCourseIds] = useState([]);
   const [thumbnails, setThumbnails] = useState({});
   const token = localStorage.getItem("token");
+  const isMobile = useIsMobile();
 
   async function openPlaylist(course) {
     setViewingCourse(course);
@@ -175,7 +177,7 @@ export default function Courses({ dark, setDark }) {
             <div style={{ fontSize: 13 }}>Try a different search or filter</div>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
             {filtered.map((course, i) => (
               <div key={course.id}
                 onClick={() => openPlaylist(course)}

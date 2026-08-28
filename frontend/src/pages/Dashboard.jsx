@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { getUserCourses, getAllCourses, selectCourse, removeCourse, getNotes, saveNote, getPlaylist, getCourseThumbnail, getAllUserNotes, deleteNotesForCourse } from "../api/api";
+import useIsMobile from "../hooks/useIsMobile";
 
 export default function Dashboard({ dark, setDark }) {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ export default function Dashboard({ dark, setDark }) {
   const [loadingNotedCourses, setLoadingNotedCourses] = useState(false);
 
   const token = localStorage.getItem("token");
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const u = localStorage.getItem("user");
@@ -238,7 +240,7 @@ export default function Dashboard({ dark, setDark }) {
     <div style={{ fontFamily: "'Segoe UI', sans-serif", background: t.bg, minHeight: "100vh", color: t.text }}>
       <Navbar dark={dark} setDark={setDark} />
 
-      <div style={{ maxWidth: 1140, margin: "0 auto", padding: "32px 40px" }}>
+      <div style={{ maxWidth: 1140, margin: "0 auto", padding: isMobile ? "20px 16px" : "32px 40px" }}>
 
         {/* Welcome — mesh-gradient hero with stats */}
         <div style={{
@@ -250,7 +252,7 @@ export default function Dashboard({ dark, setDark }) {
           <div style={{ position: "absolute", top: -60, right: -40, width: 220, height: 220, borderRadius: "50%", background: "radial-gradient(circle, rgba(96,165,250,0.35), transparent 70%)", pointerEvents: "none" }} />
           <div style={{ position: "absolute", bottom: -80, left: "30%", width: 260, height: 260, borderRadius: "50%", background: "radial-gradient(circle, rgba(240,169,58,0.18), transparent 70%)", pointerEvents: "none" }} />
 
-          <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 20 }}>
+          <div style={{ position: "relative", display: "flex", alignItems: isMobile ? "flex-start" : "center", justifyContent: "space-between", flexWrap: "wrap", gap: 20, flexDirection: isMobile ? "column" : "row" }}>
             <div>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#FBBF6C", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
                 {greeting}
@@ -258,7 +260,7 @@ export default function Dashboard({ dark, setDark }) {
               <h2 style={{ fontSize: 26, fontWeight: 800, color: "white", marginBottom: 6, letterSpacing: "-0.02em" }}>
                 {user?.name} 👋
               </h2>
-               <p style={{ fontSize: 13, color: "#B7CCEE" }}>{user?.department} • {user?.university} • •  {user?.year_semester}</p>
+              <p style={{ fontSize: 13, color: "#B7CCEE" }}>{user?.department} • {user?.university} • •  {user?.year_semester}</p>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
@@ -360,7 +362,7 @@ export default function Dashboard({ dark, setDark }) {
                 )}
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
                 {filtered.map((course, i) => {
                   const isEnrolled = myCourses.find(c => c.id === course.id);
                   return (
@@ -441,7 +443,7 @@ export default function Dashboard({ dark, setDark }) {
               ) : (
                 <div>
                   <div style={{ fontSize: 13, color: t.text2, marginBottom: 14 }}>Courses you've taken notes on — click one to open it</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 14 }}>
                     {notedCourses.map(course => (
                       <div key={course.id} onClick={() => openNotes(course)} style={{
                         background: t.cardBg, border: `1px solid ${t.border}`, borderRadius: 14,
@@ -491,7 +493,7 @@ export default function Dashboard({ dark, setDark }) {
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
 
                   {/* Text Notes — notebook paper look, this is the signature element */}
                   <div style={{
@@ -579,10 +581,10 @@ export default function Dashboard({ dark, setDark }) {
       {/* Video + Notes split view */}
       {viewingCourse && (
         <div onClick={closePlaylist} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: t.cardBg, borderRadius: 16, maxWidth: 1200, width: "100%", maxHeight: "88vh", display: "flex", overflow: "hidden" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: t.cardBg, borderRadius: 16, maxWidth: 1200, width: "100%", maxHeight: "92vh", display: "flex", flexDirection: isMobile ? "column" : "row", overflow: isMobile ? "auto" : "hidden" }}>
 
             {/* LEFT: video(s) */}
-            <div style={{ flex: 1, minWidth: 0, padding: 28, overflowY: "auto" }}>
+            <div style={{ flex: isMobile ? "none" : 1, minWidth: 0, padding: 28, overflowY: isMobile ? "visible" : "auto" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
                 <div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: t.text }}>{viewingCourse.title}</div>
@@ -623,7 +625,7 @@ export default function Dashboard({ dark, setDark }) {
             </div>
 
             {/* RIGHT: notes for this course, editable while the video plays */}
-            <div style={{ width: 340, flexShrink: 0, borderLeft: `1px solid ${t.border}`, padding: 20, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ width: isMobile ? "100%" : 340, flexShrink: 0, borderLeft: isMobile ? "none" : `1px solid ${t.border}`, borderTop: isMobile ? `1px solid ${t.border}` : "none", padding: 20, overflowY: isMobile ? "visible" : "auto", display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>📝 Notes</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

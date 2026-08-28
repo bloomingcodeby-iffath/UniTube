@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { loginUser } from "../api/api";
+import useIsMobile from "../hooks/useIsMobile";
 
 export default function Login({ dark, setDark }) {
   const navigate = useNavigate();
@@ -9,6 +10,7 @@ export default function Login({ dark, setDark }) {
   const [pass, setPass] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const isMobile = useIsMobile();
 
   const t = {
     bg: dark ? "#0F172A" : "#F9FAFB",

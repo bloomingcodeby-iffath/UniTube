@@ -2,12 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { registerUser } from "../api/api";
+import useIsMobile from "../hooks/useIsMobile";
 
 export default function Register({ dark, setDark }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", university: "Metropolitan University", department: "", year: "", semester: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const isMobile = useIsMobile();
 
   const t = {
     bg: dark ? "#0F172A" : "#F9FAFB",

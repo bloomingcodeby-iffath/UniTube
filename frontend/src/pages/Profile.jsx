@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { updateProfile } from "../api/api";
+import useIsMobile from "../hooks/useIsMobile";
 
 export default function Profile({ dark, setDark }) {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export default function Profile({ dark, setDark }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!token) navigate("/login");

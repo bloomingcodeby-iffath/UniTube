@@ -5,6 +5,9 @@ import LoginModal from "../components/LoginModal";
 import { getAllCourses, getCourseThumbnail } from "../api/api";
 import heroLight from "../assets/hero-light.png";
 import heroDark from "../assets/hero-dark.png";
+import Footer from "../components/Footer";
+import useIsMobile from "../hooks/useIsMobile";
+
 
 const departments = [
   { icon: "💻", name: "Computer Science & Engineering (CSE)", count: "40+ courses", code: "CSE" },
@@ -53,6 +56,7 @@ export default function Home({ dark, setDark }) {
   const [footerRef, footerVisible] = useVisible();
   const navigate = useNavigate();
   const isLoggedIn = !!localStorage.getItem("token");
+  const isMobile = useIsMobile();
 
   function handleGatedAction(opts = {}) {
     if (isLoggedIn) {
@@ -157,13 +161,14 @@ export default function Home({ dark, setDark }) {
         }} />
 
         <div style={{
-          padding: "70px 40px 60px",
+          padding: isMobile ? "40px 20px 36px" : "70px 40px 60px",
           display: "flex", alignItems: "center",
-          justifyContent: "space-between", gap: 40,
-          maxWidth: 1100, margin: "0 auto", position: "relative"
+          justifyContent: "space-between", gap: isMobile ? 24 : 40,
+          maxWidth: 1100, margin: "0 auto", position: "relative",
+          flexDirection: isMobile ? "column" : "row",
         }}>
           {/* Left */}
-          <div style={{ flex: 1.2, ...fadeUp(heroVisible, 0) }}>
+          <div style={{ flex: 1.2, width: "100%", ...fadeUp(heroVisible, 0) }}>
             <div style={{
               display: "inline-block", fontSize: 11, fontWeight: 700,
               color: t.accent, textTransform: "uppercase",
@@ -175,12 +180,12 @@ export default function Home({ dark, setDark }) {
               🎓 University Course Platform
             </div>
 
-             <h1 style={{ fontSize: 44, fontWeight: 800, color: t.text, lineHeight: 1.15, marginBottom: 14 }}>
+             <h1 style={{ fontSize: isMobile ? 30 : 44, fontWeight: 800, color: t.text, lineHeight: 1.15, marginBottom: 14 }}>
               University Course<br />
               <span style={{ color: dark ? "#8995d7" : "#3555d5bf", fontStyle: "italic" }}>Video</span> Library
             </h1>
 
-            <p style={{ fontSize: 15, color: t.text2, marginBottom: 28, lineHeight: 1.75, opacity: 0.85 }}>
+            <p style={{ fontSize: 14, color: t.text2, marginBottom: 24, lineHeight: 1.75, opacity: 0.85 }}>
               Your courses, anytime anywhere.<br />
               One platform for lectures from all departments.
             </p>
@@ -189,7 +194,7 @@ export default function Home({ dark, setDark }) {
             <div style={{
               display: "flex", background: t.searchBg,
               border: `1.5px solid ${t.border}`, borderRadius: 12,
-              overflow: "hidden", maxWidth: 460,
+              overflow: "hidden", maxWidth: isMobile ? "100%" : 460,
               boxShadow: dark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 4px 20px rgba(37,99,235,0.1)"
             }}>
               <input type="text" placeholder="Search any subject or course..."
@@ -199,12 +204,12 @@ export default function Home({ dark, setDark }) {
                 style={{
                   flex: 1, padding: "13px 16px", border: "none",
                   outline: "none", fontSize: 13, color: t.text,
-                  background: "transparent"
+                  background: "transparent", minWidth: 0
                 }} />
               <button onClick={() => handleGatedAction({ search: searchTerm })} style={{
                 background: t.btnBg, color: "white", border: "none",
                 padding: "13px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                transition: "background 0.2s"
+                transition: "background 0.2s", flexShrink: 0
               }}>
                 Search
               </button>
@@ -233,7 +238,8 @@ export default function Home({ dark, setDark }) {
                 background: t.btnBg, color: "white", border: "none",
                 padding: "12px 24px", borderRadius: 8, fontSize: 14,
                 fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
-                boxShadow: "0 4px 14px rgba(37,99,235,0.3)"
+                boxShadow: "0 4px 14px rgba(37,99,235,0.3)",
+                flex: isMobile ? 1 : "initial"
               }}
                 onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
@@ -243,7 +249,8 @@ export default function Home({ dark, setDark }) {
                 <button onClick={() => navigate("/login")} style={{
                   background: "transparent", color: t.accent,
                   border: `1.5px solid ${t.accent}`, padding: "12px 24px",
-                  borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "all 0.2s"
+                  borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
+                  flex: isMobile ? 1 : "initial"
                 }}
                   onMouseEnter={e => { e.currentTarget.style.background = t.accent; e.currentTarget.style.color = "white"; }}
                   onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = t.accent; }}>
@@ -254,44 +261,47 @@ export default function Home({ dark, setDark }) {
           </div>
 
           {/* Hero Image */}
-          <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", ...fadeUp(heroVisible, 0.2) }}>
-            <div >
-              <img src={dark ? heroDark : heroLight} alt="UniTube Hero"
-                style={{
-                  width: "100%", maxWidth: 500, height: "auto",
-                  objectFit: "contain", transition: "0.4s ease",
-                  filter: dark
-                    ? "drop-shadow(0 0 30px rgba(96,165,250,0.3))"
-                    : "drop-shadow(0 20px 40px rgba(37,99,235,0.15))",
-                }} />
+          {!isMobile && (
+            <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", ...fadeUp(heroVisible, 0.2) }}>
+              <div>
+                <img src={dark ? heroDark : heroLight} alt="UniTube Hero"
+                  style={{
+                    width: "100%", maxWidth: 500, height: "auto",
+                    objectFit: "contain", transition: "0.4s ease",
+                    filter: dark
+                      ? "drop-shadow(0 0 30px rgba(96,165,250,0.3))"
+                      : "drop-shadow(0 20px 40px rgba(37,99,235,0.15))",
+                  }} />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
       {/* STATS */}
       <div ref={statsRef} style={{
-        background: t.navBg, padding: "28px 40px",
-        display: "flex", justifyContent: "center", gap: 64,
+        background: t.navBg, padding: isMobile ? "22px 16px" : "28px 40px",
+        display: "flex", justifyContent: "center",
+        flexWrap: "wrap", gap: isMobile ? 24 : 64,
         borderTop: "1px solid rgba(96,165,250,0.1)",
         ...fadeUp(statsVisible, 0)
       }}>
         {stats.map((s, i) => (
-          <div key={s.label} style={{ textAlign: "center", ...fadeUp(statsVisible, i * 0.1) }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#60A5FA" }}>{s.num}</div>
+          <div key={s.label} style={{ textAlign: "center", minWidth: isMobile ? "38%" : "auto", ...fadeUp(statsVisible, i * 0.1) }}>
+            <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "#60A5FA" }}>{s.num}</div>
             <div style={{ fontSize: 11, color: "#93C5FD", opacity: 0.7, marginTop: 2 }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* DEPARTMENTS */}
-      <div ref={deptRef} style={{ padding: "56px 40px", background: t.bg }}>
+      <div ref={deptRef} style={{ padding: isMobile ? "36px 16px" : "56px 40px", background: t.bg }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: t.text2, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8 }}>Browse by department</div>
-          <div style={{ fontSize: 26, fontWeight: 700, color: t.text, marginBottom: 28, ...fadeUp(deptVisible, 0) }}>
+          <div style={{ fontSize: isMobile ? 20 : 26, fontWeight: 700, color: t.text, marginBottom: 24, ...fadeUp(deptVisible, 0) }}>
             Which department are you in?
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)", gap: 12 }}>
             {departments.map((d, i) => (
               <div key={d.name} onClick={() => handleGatedAction({ dept: d.code })}
                 onMouseEnter={e => {
@@ -308,6 +318,7 @@ export default function Home({ dark, setDark }) {
                   background: t.cardBg, border: `1px solid ${t.border}`,
                   borderRadius: 12, padding: "20px 12px", textAlign: "center",
                   cursor: "pointer", transition: "all 0.25s",
+                  gridColumn: isMobile && i === departments.length - 1 ? "span 2" : "auto",
                   ...fadeUp(deptVisible, i * 0.08)
                 }}>
                 <div style={{ fontSize: 26, marginBottom: 8 }}>{d.icon}</div>
@@ -320,13 +331,13 @@ export default function Home({ dark, setDark }) {
       </div>
 
       {/* VIDEOS */}
-      <div ref={videoRef} style={{ background: t.bg2, padding: "56px 40px" }}>
+      <div ref={videoRef} style={{ background: t.bg2, padding: isMobile ? "36px 16px" : "56px 40px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: t.text2, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8 }}>Trending now</div>
-          <div style={{ fontSize: 26, fontWeight: 700, color: t.text, marginBottom: 28, ...fadeUp(videoVisible, 0) }}>
+          <div style={{ fontSize: isMobile ? 20 : 26, fontWeight: 700, color: t.text, marginBottom: 24, ...fadeUp(videoVisible, 0) }}>
             Popular video lectures
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 18 }}>
             {trendingVideos.map((v, i) => (
               <div key={v.title} onClick={() => handleGatedAction({ search: v.title })}
                 onMouseEnter={e => {
@@ -370,51 +381,7 @@ export default function Home({ dark, setDark }) {
           </div>
         </div>
       </div>
-
-      {/* FOOTER */}
-      <footer ref={footerRef} style={{ background: t.navBg, padding: "40px 40px 24px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 32, ...fadeUp(footerVisible, 0) }}>
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#60A5FA", marginBottom: 8 }}>🎬 UniTube</div>
-              <div style={{ fontSize: 12, color: "#93C5FD", opacity: 0.6, maxWidth: 220, lineHeight: 1.7 }}>
-                University Course video library
-              </div>
-            </div>
-            {[
-              { title: "Platform", links: [
-                { label: "Browse courses", to: "/courses" },
-                { label: "Departments", to: "/courses" },
-                { label: "My dashboard", to: "/dashboard" },
-              ] },
-              { title: "Account", links: [
-                { label: "Sign in", to: "/login" },
-                { label: "Register", to: "/register" },
-              ] },
-              { title: "University", links: [
-                { label: "Contact", to: "/about" },
-              ] },
-            ].map((col) => (
-              <div key={col.title}>
-                <h4 style={{ fontSize: 11, fontWeight: 700, color: "#93C5FD", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>{col.title}</h4>
-                {col.links.map((l) => (
-                  <a key={l.label} href="#" onClick={(e) => { e.preventDefault(); navigate(l.to); }}
-                    style={{ display: "block", fontSize: 12, color: "#93C5FD", opacity: 0.5, textDecoration: "none", marginBottom: 6, transition: "opacity 0.2s" }}
-                    onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                    onMouseLeave={e => e.currentTarget.style.opacity = 0.5}>
-                    {l.label}
-                  </a>
-                ))}
-              </div>
-            ))}
-          </div>
-          <div style={{ borderTop: "1px solid rgba(96,165,250,0.1)", paddingTop: 20, display: "flex", justifyContent: "space-between" }}>
-            <div style={{ fontSize: 11, color: "#93C5FD", opacity: 0.35 }}>© 2026 UniTube • Metropolitan University, Sylhet</div>
-            <div style={{ fontSize: 11, color: "#93C5FD", opacity: 0.35 }}>Made by Iffath & Fariba</div>
-          </div>
-        </div>
-      </footer>
-
+      <Footer t={t} />
       <LoginModal show={showModal} onClose={() => setShowModal(false)} dark={dark} />
     </div>
   );

@@ -4,10 +4,12 @@ import { useEffect } from "react";
 import Navbar from "../components/Navbar";
 import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
+import useIsMobile from "../hooks/useIsMobile";
 
 export default function About({ dark, setDark }) {
   const navigate = useNavigate();
   const isLoggedIn = !!localStorage.getItem("token");
+  const isMobile = useIsMobile();
 useEffect(() => {
   AOS.init({
     duration: 700,
@@ -82,7 +84,7 @@ useEffect(() => {
             <div style={{ fontSize: 11, fontWeight: 700, color: t.accent, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8 }}>Features</div>
             <h2 style={{ fontSize: 28, fontWeight: 700, color: t.text }}>Everything you need to learn</h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
             {features.map((f) => (
               <div key={f.title} style={{
                 background: t.cardBg, border: `1px solid ${t.border}`,
