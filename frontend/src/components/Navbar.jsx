@@ -1,27 +1,37 @@
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import useIsMobile from "../hooks/useIsMobile";
 
 export default function Navbar({ dark, setDark, showAuthButtons = true, showLogout = false }) {
   const navigate = useNavigate();
   const location = useLocation();
   const token = localStorage.getItem("token");
+  const isMobile = useIsMobile();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    setMenuOpen(false);
     navigate("/login");
+  }
+
+  function go(path) {
+    setMenuOpen(false);
+    navigate(path);
   }
 
   const s = {
     nav: {
       background: dark ? "#0A0F1E" : "#1E3A5F",
-      padding: "0 40px", height: 64,
+      padding: isMobile ? "0 16px" : "0 40px", height: 64,
       display: "flex", alignItems: "center",
       justifyContent: "space-between",
       position: "sticky", top: 0, zIndex: 100,
       borderBottom: "1px solid rgba(96,165,250,0.1)",
       boxShadow: "0 2px 20px rgba(0,0,0,0.2)"
     },
-    brand: { fontSize: 20, fontWeight: 800, color: "#60A5FA", cursor: "pointer", letterSpacing: "-0.02em" },
+    brand: { fontSize: isMobile ? 17 : 20, fontWeight: 800, color: "#60A5FA", cursor: "pointer", letterSpacing: "-0.02em" },
     midLink: (active) => ({
       color: active ? "#60A5FA" : "rgba(255,255,255,0.65)",
       fontSize: 14, textDecoration: "none", fontWeight: active ? 600 : 400,
@@ -46,12 +56,55 @@ export default function Navbar({ dark, setDark, showAuthButtons = true, showLogo
     },
   };
 
+  // ===== MOBILE LAYOUT =====
+  if (isMobile) {
+    return (
+      <nav style={{ ...s.nav, flexDirection: "column", alignItems: "stretch", height: "auto", padding: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", height: 60 }}>
+          <div style={s.brand} onClick={() => go("/")}>🎬 UniTube</div>
+          <button onClick={() => setMenuOpen(!menuOpen)} style={{
+            background: "none", border: "none", color: "white", fontSize: 22, cursor: "pointer", padding: 4
+          }}>
+            {menuOpen ? "✕" : "☰"}
+          </button>
+        </div>
+
+        {menuOpen && (
+          <div style={{ padding: "8px 16px 20px", display: "flex", flexDirection: "column", gap: 4, borderTop: "1px solid rgba(96,165,250,0.1)" }}>
+            <span style={{ ...s.midLink(location.pathname === "/"), padding: "10px 0" }} onClick={() => go("/")}>Home</span>
+            <span style={{ ...s.midLink(location.pathname === "/about"), padding: "10px 0" }} onClick={() => go("/about")}>About</span>
+            {token && (
+              <>
+                <span style={{ ...s.midLink(location.pathname === "/courses"), padding: "10px 0" }} onClick={() => go("/courses")}>Courses</span>
+                <span style={{ ...s.midLink(location.pathname === "/dashboard"), padding: "10px 0" }} onClick={() => go("/dashboard")}>Dashboard</span>
+              </>
+            )}
+
+            <button style={{ ...s.toggle, justifyContent: "center", marginTop: 10 }} onClick={() => setDark(!dark)}>
+              {dark ? "☀️ Light mode" : "🌙 Dark mode"}
+            </button>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+              {token ? (
+                <button style={s.btnOutline} onClick={logout}>Logout</button>
+              ) : (
+                <>
+                  <button style={s.btnOutline} onClick={() => go("/login")}>Sign in</button>
+                  <button style={s.btnFill} onClick={() => go("/register")}>Get started</button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </nav>
+    );
+  }
+
+  // ===== DESKTOP LAYOUT (unchanged) =====
   return (
     <nav style={s.nav}>
-      {/* Brand */}
       <div style={s.brand} onClick={() => navigate("/")}>🎬 UniTube</div>
 
-      {/* Middle Links */}
       <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
         <span style={s.midLink(location.pathname === "/")} onClick={() => navigate("/")}>Home</span>
         <span style={s.midLink(location.pathname === "/about")} onClick={() => navigate("/about")}>About</span>
@@ -63,7 +116,6 @@ export default function Navbar({ dark, setDark, showAuthButtons = true, showLogo
         )}
       </div>
 
-      {/* Right */}
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
         <button style={s.toggle} onClick={() => setDark(!dark)}>
           {dark ? "☀️ Light" : "🌙 Dark"}
